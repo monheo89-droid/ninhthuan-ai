@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Chuyển Cảnh Tức Thì</title>
+    <title>Ninh Thuận AI - Smooth Transition</title>
     <style>
         :root { --vr-color: #ff9800; --shop-color: #27ae60; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* THANH ĐIỀU HƯỚNG: LUÔN NẰM TRÊN CÙNG (Z-INDEX CAO NHẤT) */
+        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH */
         #nav-container { 
             position: fixed; top: 20px; left: 20px; z-index: 999999; 
             display: flex; gap: 15px; 
@@ -19,36 +19,27 @@
             align-items: center; justify-content: center;
             box-shadow: 0 4px 25px rgba(0,0,0,0.7); transition: transform 0.2s;
         }
-        .icon-btn:hover { transform: scale(1.1); }
         .icon-btn:active { transform: scale(0.9); }
-        
         #btn-vr.active { background: var(--vr-color) !important; color: #fff; }
         #btn-shop.active { background: var(--shop-color) !important; color: #fff; }
 
-        /* LỚP PHỦ VIDEO GIỚI THIỆU */
+        /* LỚP PHỦ VIDEO GIỚI THIỆU - CHỈ HIỆN LẦN ĐẦU */
         #video-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 999998; /* Thấp hơn thanh điều hướng 1 bậc */
+            background: #000; z-index: 999998; 
             display: flex; align-items: center; justify-content: center; 
         }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* KHUNG CHỨA NỘI DUNG PANOEE */
+        /* KHUNG CHỨA NỘI DUNG */
         #pano-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; z-index: 1; }
-
-        /* HIỆU ỨNG CHỜ */
-        #status-node {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            color: white; z-index: 1000; background: rgba(0,0,0,0.6);
-            padding: 8px 20px; border-radius: 20px; font-size: 14px; display: none;
-        }
     </style>
 </head>
 <body>
 
     <div id="nav-container">
-        <div class="icon-btn" id="btn-vr" onclick="smartNav('vr')" title="📍 Xem Tour VR">📍</div>
-        <div class="icon-btn" id="btn-shop" onclick="smartNav('shop')" title="🛒 Vào Gian Hàng">🛒</div>
+        <div class="icon-btn" id="btn-vr" onclick="changeView('vr')">📍</div>
+        <div class="icon-btn" id="btn-shop" onclick="changeView('shop')">🛒</div>
     </div>
 
     <div id="video-overlay">
@@ -58,59 +49,41 @@
     </div>
 
     <iframe id="pano-frame" src=""></iframe>
-    <div id="status-node">Đang tải không gian 3D...</div>
 
     <script>
-        // Cấu hình link cảnh
-        const LINK_TOUR_VR = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c";
-        const LINK_GIAN_HANG = "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb";
+        const LINK_VR = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c";
+        const LINK_SHOP = "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb";
 
-        // Tải sẵn VR dưới nền để khi đóng video là thấy ngay
+        // Tải sẵn nội dung VR bên dưới video
         window.onload = () => {
-            document.getElementById('pano-frame').src = LINK_TOUR_VR;
+            document.getElementById('pano-frame').src = LINK_VR;
         };
 
-        /**
-         * HÀM ĐIỀU HƯỚNG THÔNG MINH
-         * Tự động đóng video và nạp cảnh tương ứng
-         */
-        function smartNav(mode) {
-            // 1. Kiểm tra và XÓA video giới thiệu ngay lập tức
+        function changeView(mode) {
+            // 1. KIỂM TRA VÀ XÓA BỎ GIAO DIỆN VIDEO VĨNH VIỄN
             const overlay = document.getElementById('video-overlay');
             if (overlay) {
                 const vid = document.getElementById('intro-video');
                 if (vid) vid.pause();
-                overlay.remove(); // Xóa khỏi DOM để giải phóng bộ nhớ
+                overlay.remove(); // Lệnh này xóa hẳn giao diện bạn không muốn nhìn thấy
             }
 
-            // 2. Cập nhật trạng thái Iframe và Nút bấm
+            // 2. CHUYỂN CẢNH TRONG IFRAME
             const frame = document.getElementById('pano-frame');
             const bVr = document.getElementById('btn-vr');
             const bShop = document.getElementById('btn-shop');
-            const status = document.getElementById('status-node');
 
             bVr.classList.remove('active');
             bShop.classList.remove('active');
 
             if (mode === 'vr') {
                 bVr.classList.add('active');
-                if (frame.src !== LINK_TOUR_VR) {
-                    status.style.display = 'block';
-                    frame.src = LINK_TOUR_VR;
-                }
+                if (frame.src !== LINK_VR) frame.src = LINK_VR;
             } else {
                 bShop.classList.add('active');
-                if (frame.src !== LINK_GIAN_HANG) {
-                    status.style.display = 'block';
-                    frame.src = LINK_GIAN_HANG;
-                }
+                if (frame.src !== LINK_SHOP) frame.src = LINK_SHOP;
             }
         }
-
-        // Tự động ẩn dòng thông báo khi Iframe tải xong
-        document.getElementById('pano-frame').onload = function() {
-            document.getElementById('status-node').style.display = 'none';
-        };
     </script>
 </body>
 </html>
