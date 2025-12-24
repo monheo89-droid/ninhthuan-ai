@@ -3,124 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Fix 100%</title>
+    <title>Ninh Thuận Digital - Final Fix</title>
     <style>
         :root { --primary: #ff9800; --success: #27ae60; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* THANH ĐIỀU HƯỚNG - LỚP CAO NHẤT */
-        .nav-bar { 
-            position: fixed; top: 20px; left: 20px; z-index: 9999; 
-            display: flex; gap: 12px; pointer-events: auto; 
+        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH - ƯU TIÊN CAO NHẤT */
+        #main-nav { 
+            position: fixed; top: 20px; left: 20px; z-index: 99999; 
+            display: flex; gap: 12px; pointer-events: auto;
         }
         .nav-btn { 
-            width: 50px; height: 50px; border-radius: 50%; border: 2px solid white;
-            background: rgba(255,255,255,0.9); font-size: 20px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            width: 55px; height: 55px; border-radius: 50%; border: 3px solid white;
+            background: white; font-size: 24px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6); transition: 0.2s;
         }
         .nav-btn.active { background: var(--primary) !important; color: white; transform: scale(1.1); }
         .nav-btn.shop-active { background: var(--success) !important; color: white; }
 
-        /* NỘI DUNG TAB */
-        .tab-content { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
-        .tab-content.active { display: block; }
+        /* CONTAINER TAB */
+        .tab-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
+        .tab-content.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* MENU AI */
-        #ai-menu { 
-            position: fixed; top: 85px; left: 20px; z-index: 9000; 
-            width: 260px; background: white; padding: 20px; border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: 0.3s;
-        }
-        #ai-menu.hidden { display: none; }
-
-        /* CANVAS - CHỈ NHẬN CHUỘT KHI CẦN */
-        #ui-canvas { position: absolute; top: 0; left: 0; z-index: 500; pointer-events: none; }
-        
-        /* VIDEO INTRO */
+        /* LỚP PHỦ VIDEO */
         #intro-layer { 
             position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background: #000; z-index: 88888; display: flex; flex-direction: column; align-items: center; justify-content: center; 
         }
+
+        /* MENU AI */
+        #ai-side-menu { 
+            position: fixed; top: 90px; left: 20px; z-index: 77777; 
+            width: 260px; background: rgba(255,255,255,0.95); padding: 20px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
+        }
+        #ui-canvas { position: absolute; top: 0; left: 0; z-index: 500; pointer-events: none; }
     </style>
 </head>
 <body>
 
     <div id="intro-layer">
-        <video id="v-intro" width="100%" autoplay muted playsinline>
+        <video id="v-intro" width="100%" autoplay muted playsinline loop>
             <source src="LINK_VIDEO_CỦA_BẠN.mp4" type="video/mp4">
         </video>
-        <button onclick="startApp()" style="margin-top:20px; padding:15px 40px; background:var(--primary); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">KHÁM PHÁ NGAY</button>
+        <button onclick="destroyIntro('vr')" style="margin-top:20px; padding:15px 40px; background:var(--primary); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer; font-size:18px;">KHÁM PHÁ TOUR VR</button>
+        <button onclick="destroyIntro('shop')" style="margin-top:10px; padding:10px 30px; background:var(--success); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">VÀO GIAN HÀNG LUÔN 🛒</button>
     </div>
 
-    <div class="nav-bar">
-        <button class="nav-btn" onclick="toggleMenu()">☰</button>
-        <button class="nav-btn active" id="btn-vr" onclick="goToTab('vr')">📍</button>
-        <button class="nav-btn" id="btn-shop" onclick="goToTab('shop')">🛒</button>
+    <div id="main-nav">
+        <button class="nav-btn" onclick="toggleAIMenu()">☰</button>
+        <button class="nav-btn active" id="btn-vr" onclick="changeTab('vr')">📍</button>
+        <button class="nav-btn" id="btn-shop" onclick="changeTab('shop')">🛒</button>
     </div>
 
     <div id="tab-vr" class="tab-content active">
         <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
         <canvas id="ui-canvas"></canvas>
-        <div id="ai-menu">
-            <h4 style="margin:0 0 10px">Ninh Thuận AI</h4>
-            <input type="file" id="f-upload" style="display:none" onchange="handleAI(this)">
-            <button onclick="document.getElementById('f-upload').click()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer;">📸 Chụp ảnh ngay</button>
-        </div>
     </div>
 
     <div id="tab-shop" class="tab-content">
         <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
     </div>
 
+    <div id="ai-side-menu">
+        <h3 style="margin:0 0 15px">Ninh Thuận AI</h3>
+        <button onclick="alert('Chọn ảnh từ máy...')" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">📸 Chụp ảnh ngay</button>
+    </div>
+
     <script>
-        // Khởi tạo
-        const canvas = document.getElementById('ui-canvas');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        function startApp() {
-            const vid = document.getElementById('v-intro');
-            vid.pause();
-            document.getElementById('intro-layer').style.display = 'none';
+        // Hàm xóa bỏ hoàn toàn Video để giải phóng bộ nhớ và tránh đơ nút
+        function destroyIntro(target) {
+            const intro = document.getElementById('intro-layer');
+            const video = document.getElementById('v-intro');
+            if (video) video.pause();
+            if (intro) intro.remove(); // XÓA HẲN KHỎI DOM
+            
+            changeTab(target); // Sau khi xóa thì chuyển tab
         }
 
-        function toggleMenu() {
-            const menu = document.getElementById('ai-menu');
-            menu.style.display = (menu.style.display === 'none') ? 'block' : 'none';
-        }
-
-        function goToTab(name) {
-            // Dừng video nếu còn chạy
-            startApp();
-
-            // Reset Tabs
+        function changeTab(name) {
+            // 1. Reset class cho Tab
             document.getElementById('tab-vr').classList.remove('active');
             document.getElementById('tab-shop').classList.remove('active');
+            
+            // 2. Reset class cho Nút
             document.getElementById('btn-vr').classList.remove('active');
             document.getElementById('btn-shop').classList.remove('active');
             document.getElementById('btn-shop').classList.remove('shop-active');
 
-            // Kích hoạt Tab
+            // 3. Kích hoạt đúng Tab
             if(name === 'vr') {
                 document.getElementById('tab-vr').classList.add('active');
                 document.getElementById('btn-vr').classList.add('active');
-                document.getElementById('ai-menu').classList.remove('hidden');
-                canvas.style.display = 'block';
+                document.getElementById('ui-canvas').style.display = 'block';
             } else {
                 document.getElementById('tab-shop').classList.add('active');
                 document.getElementById('btn-shop').classList.add('shop-active');
-                document.getElementById('ai-menu').classList.add('hidden');
-                canvas.style.display = 'none';
+                document.getElementById('ui-canvas').style.display = 'none';
+                document.getElementById('ai-side-menu').style.display = 'none';
             }
         }
 
-        // AI logic rút gọn để tránh lỗi
-        async function handleAI(input) {
-            if(!input.files[0]) return;
-            alert("Đang xử lý AI... Vui lòng đợi trong giây lát.");
-            // Code xử lý remove.bg của bạn đặt ở đây
+        function toggleAIMenu() {
+            const menu = document.getElementById('ai-side-menu');
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
         }
+
+        // Tự động resize canvas
+        window.onresize = () => {
+            const cv = document.getElementById('ui-canvas');
+            cv.width = window.innerWidth;
+            cv.height = window.innerHeight;
+        };
     </script>
 </body>
 </html>
