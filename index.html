@@ -3,97 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Instant Switch</title>
+    <title>Ninh Thuận AI - Instant Access</title>
     <style>
-        :root { --primary: #ff9800; --success: #27ae60; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-
-        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH - ƯU TIÊN 1 */
-        #main-nav { 
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        
+        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH */
+        .nav-bar { 
             position: fixed; top: 20px; left: 20px; z-index: 99999; 
-            display: flex; gap: 12px; pointer-events: auto;
+            display: flex; gap: 10px; pointer-events: auto;
         }
         .nav-btn { 
-            width: 50px; height: 50px; border-radius: 50%; border: 3px solid white;
-            background: white; font-size: 22px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
+            width: 55px; height: 55px; border-radius: 50%; border: 3px solid white;
+            background: white; font-size: 24px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.6);
         }
-        /* Màu cam cho Tour, màu xanh cho Giỏ hàng giống ảnh của bạn */
-        #btn-vr.active { background: var(--primary) !important; color: white; }
-        #btn-shop.active { background: var(--success) !important; color: white; }
-
-        /* HỆ THỐNG TAB SONG SONG */
-        .tab-content { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            display: none; /* Mặc định ẩn */
-        }
-        .tab-content.active { display: block; }
-        
-        iframe { width: 100%; height: 100%; border: none; }
+        #b-vr.active { background: #ff9800 !important; color: white; }
+        #b-shop.active { background: #27ae60 !important; color: white; }
 
         /* VIDEO GIỚI THIỆU */
-        #intro-overlay { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: #000; z-index: 100000; display: flex; align-items: center; justify-content: center; 
+        #intro-layer { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 100000; display: flex; flex-direction: column; align-items: center; justify-content: center; 
         }
+
+        /* KHUNG CHỨA IFRAME */
+        #content-frame { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
 
-    <div id="intro-overlay">
-        <video id="v-intro" width="100%" autoplay muted playsinline loop>
+    <div id="intro-layer">
+        <video id="v-intro" width="100%" autoplay muted loop playsinline>
             <source src="LINK_VIDEO_CỦA_BẠN.mp4" type="video/mp4">
         </video>
-        <button onclick="startApp('vr')" style="position:absolute; bottom:15%; padding:15px 40px; background:var(--primary); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">KHÁM PHÁ TOUR VR</button>
+        <div style="position: absolute; bottom: 15%; display: flex; gap: 20px;">
+            <button onclick="accessNow('vr')" style="padding:15px 35px; background:#ff9800; color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer; font-size:16px;">📍 XEM TOUR VR</button>
+            <button onclick="accessNow('shop')" style="padding:15px 35px; background:#27ae60; color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer; font-size:16px;">🛒 VÀO GIAN HÀNG</button>
+        </div>
     </div>
 
-    <div id="main-nav">
-        <button class="nav-btn" onclick="toggleAI()">☰</button>
-        <button class="nav-btn active" id="btn-vr" onclick="switchTab('vr')">📍</button>
-        <button class="nav-btn" id="btn-shop" onclick="switchTab('shop')">🛒</button>
+    <div class="nav-bar">
+        <button class="nav-btn" id="b-vr" onclick="changeMode('vr')">📍</button>
+        <button class="nav-btn" id="b-shop" onclick="changeMode('shop')">🛒</button>
     </div>
 
-    <div id="tab-vr" class="tab-content active">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-    </div>
-
-    <div id="tab-shop" class="tab-content">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-    </div>
+    <iframe id="content-frame" src=""></iframe>
 
     <script>
-        function startApp(mode) {
-            const vid = document.getElementById('v-intro');
-            if(vid) vid.pause();
-            document.getElementById('intro-overlay').remove(); // Xóa hẳn video để không làm đơ nút
-            switchTab(mode);
+        // Link Scene cụ thể (Bạn nên lấy link dẫn trực tiếp vào Scene đó trong Panoee)
+        const URL_VR = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c";
+        const URL_SHOP = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"; 
+
+        // HÀM CLICK ĐẦU TIÊN: Bỏ qua video và vào thẳng mục đã chọn
+        function accessNow(mode) {
+            const intro = document.getElementById('intro-layer');
+            const video = document.getElementById('v-intro');
+            
+            if (video) video.pause();
+            intro.remove(); // Xóa sạch lớp phủ video để giải phóng click
+            
+            changeMode(mode);
         }
 
-        function switchTab(mode) {
-            // Ẩn/Hiện Tab tức thì
-            const vrTab = document.getElementById('tab-vr');
-            const shopTab = document.getElementById('tab-shop');
-            const btnVr = document.getElementById('btn-vr');
-            const btnShop = document.getElementById('btn-shop');
+        // HÀM CHUYỂN ĐỔI: Chạy ngay lập tức khi nhấn nút
+        function changeMode(mode) {
+            const iframe = document.getElementById('content-frame');
+            const btnVr = document.getElementById('b-vr');
+            const btnShop = document.getElementById('b-shop');
 
-            if(mode === 'vr') {
-                vrTab.classList.add('active');
-                shopTab.classList.remove('active');
+            // Reset trạng thái nút
+            btnVr.classList.remove('active');
+            btnShop.classList.remove('active');
+
+            if (mode === 'vr') {
                 btnVr.classList.add('active');
-                btnShop.classList.remove('active');
+                iframe.src = URL_VR;
             } else {
-                shopTab.classList.add('active');
-                vrTab.classList.remove('active');
                 btnShop.classList.add('active');
-                btnVr.classList.remove('active');
+                // Ép Iframe tải link Gian hàng số ngay lập tức
+                iframe.src = URL_SHOP; 
             }
         }
-
-        // Tự động ẩn intro sau khi load xong (tùy chọn)
-        window.addEventListener('load', () => {
-            console.log("Hệ thống đã sẵn sàng");
-        });
     </script>
 </body>
 </html>
