@@ -1,129 +1,47 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Gian Hàng Số</title>
-    <style>
-        :root { --primary: #ff9800; --success: #27ae60; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+// Các đường dẫn Scene chính xác
+const URL_VR = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c";
+const URL_SHOP = "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb";
 
-        /* LỚP PHỦ VIDEO GIỚI THIỆU */
-        #intro-layer { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 100000; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-        }
-        #v-intro { width: 100%; height: auto; max-height: 80vh; pointer-events: none; }
-
-        .intro-controls { position: absolute; bottom: 15%; display: flex; gap: 20px; z-index: 100001; }
-        .btn-start { 
-            padding: 15px 35px; border: none; border-radius: 30px; color: white; 
-            font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .btn-vr { background: var(--primary); }
-        .btn-shop { background: var(--success); }
-        .btn-start:hover { transform: scale(1.05); opacity: 0.9; }
-
-        /* THANH ĐIỀU HƯỚNG CHÍNH */
-        #main-nav { 
-            position: fixed; top: 20px; left: 20px; z-index: 99999; 
-            display: none; gap: 12px; pointer-events: auto;
-        }
-        .nav-btn { 
-            width: 55px; height: 55px; border-radius: 50%; border: 3px solid white;
-            background: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6); transition: 0.2s;
-        }
-        #btn-vr.active { background: var(--primary) !important; color: white; }
-        #btn-shop.active { background: var(--success) !important; color: white; }
-
-        /* KHUNG CHỨA TOUR */
-        iframe { width: 100%; height: 100%; border: none; background: #000; }
+// HÀM CHÍNH: Tự động dọn dẹp video và chuyển tab
+function handleNavigation(mode) {
+    // 1. Kiểm tra và xóa Video giới thiệu nếu nó đang hiển thị
+    const intro = document.getElementById('intro-layer');
+    if (intro) {
+        const video = document.getElementById('v-intro');
+        if (video) video.pause(); // Dừng âm thanh video
+        intro.remove(); // Xóa sạch lớp phủ video khỏi màn hình
         
-        /* HIỆU ỨNG LOADING NHẸ */
-        #loader { 
-            position: fixed; top:0; left:0; width:100%; height:100%; background:#000; 
-            z-index: 99998; display: none; align-items: center; justify-content: center; color: white;
+        // Hiện thanh điều hướng (vì mặc định ban đầu nó bị display: none)
+        document.getElementById('main-nav').style.display = 'flex';
+    }
+
+    // 2. Thực hiện chuyển Tab như bình thường
+    gotoTab(mode);
+}
+
+function gotoTab(mode) {
+    const iframe = document.getElementById('main-iframe');
+    const btnVr = document.getElementById('btn-vr');
+    const btnShop = document.getElementById('btn-shop');
+
+    btnVr.classList.remove('active');
+    btnShop.classList.remove('active');
+
+    if (mode === 'vr') {
+        btnVr.classList.add('active');
+        if (iframe.src !== URL_VR) {
+            iframe.src = URL_VR;
         }
-    </style>
-</head>
-<body>
-
-    <div id="intro-layer">
-        <video id="v-intro" autoplay muted loop playsinline>
-            <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
-        </video>
-        <div class="intro-controls">
-            <button class="btn-start btn-vr" onclick="startApp('vr')">📍 XEM TOUR VR</button>
-            <button class="btn-start btn-shop" onclick="startApp('shop')">🛒 GIAN HÀNG SỐ</button>
-        </div>
-    </div>
-
-    <div id="loader">Đang tải không gian 3D...</div>
-
-    <div id="main-nav">
-        <button class="nav-btn" id="btn-vr" onclick="gotoTab('vr')" title="Tour VR">📍</button>
-        <button class="nav-btn" id="btn-shop" onclick="gotoTab('shop')" title="Gian hàng">🛒</button>
-    </div>
-
-    <iframe id="main-iframe" src=""></iframe>
-
-    <script>
-        // Các đường dẫn Scene chính xác
-        const URL_VR = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c";
-        const URL_SHOP = "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb";
-
-        function startApp(mode) {
-            // 1. Dừng video và xóa lớp phủ ngay lập tức để giải phóng click
-            const video = document.getElementById('v-intro');
-            if (video) video.pause();
-            document.getElementById('intro-layer').remove();
-            
-            // 2. Hiện thanh điều hướng và loader
-            document.getElementById('main-nav').style.display = 'flex';
-            showLoader();
-
-            // 3. Nạp nội dung theo lựa chọn
-            gotoTab(mode);
+    } else {
+        btnShop.classList.add('active');
+        if (iframe.src !== URL_SHOP) {
+            iframe.src = URL_SHOP;
         }
+    }
+}
 
-        function gotoTab(mode) {
-            const iframe = document.getElementById('main-iframe');
-            const btnVr = document.getElementById('btn-vr');
-            const btnShop = document.getElementById('btn-shop');
-
-            // Cập nhật trạng thái nút bấm
-            btnVr.classList.remove('active');
-            btnShop.classList.remove('active');
-
-            if (mode === 'vr') {
-                btnVr.classList.add('active');
-                if (iframe.src !== URL_VR) {
-                    showLoader();
-                    iframe.src = URL_VR;
-                }
-            } else {
-                btnShop.classList.add('active');
-                // Nếu đang không ở link shop thì mới nạp lại
-                if (iframe.src !== URL_SHOP) {
-                    showLoader();
-                    iframe.src = URL_SHOP;
-                }
-            }
-        }
-
-        function showLoader() {
-            const loader = document.getElementById('loader');
-            loader.style.display = 'flex';
-            // Tự động ẩn loader sau 2 giây (giả định Panoee đã load xong)
-            setTimeout(() => { loader.style.display = 'none'; }, 2000);
-        }
-
-        // Đảm bảo ẩn loader khi iframe tải xong
-        document.getElementById('main-iframe').onload = function() {
-            document.getElementById('loader').style.display = 'none';
-        };
-    </script>
-</body>
-</html>
+// Gán sự kiện cho các nút bấm ngay khi trang web tải xong để đảm bảo nhạy
+window.onload = function() {
+    // Nếu bạn muốn mặc định tải sẵn 1 tab bên dưới lớp video để tránh màn hình đen:
+    document.getElementById('main-iframe').src = URL_VR;
+};
