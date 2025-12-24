@@ -3,39 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - No Black Screen</title>
+    <title>Ninh Thuận AI - Instant Switch</title>
     <style>
         :root { --primary: #ff9800; --success: #27ae60; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* LỚP PHỦ GIỚI THIỆU */
-        #intro-layer { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-        }
-
-        /* ĐIỀU HƯỚNG */
+        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH - LUÔN NẰM TRÊN CÙNG */
         #main-nav { 
-            position: fixed; top: 20px; left: 20px; z-index: 9000; 
-            display: none; gap: 12px;
+            position: fixed; top: 20px; left: 20px; z-index: 10000; 
+            display: none; gap: 12px; 
         }
         .nav-btn { 
             width: 55px; height: 55px; border-radius: 50%; border: 3px solid white;
-            background: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; 
+            background: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.3s;
         }
         .nav-btn.active { background: var(--primary) !important; color: white; }
         .nav-btn.shop-active { background: var(--success) !important; color: white; }
 
-        /* HỆ THỐNG IFRAME SONG SONG (TRÁNH MÀN HÌNH ĐEN) */
-        .content-tab { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            visibility: hidden; opacity: 0; transition: opacity 0.5s; z-index: 1;
-        }
-        .content-tab.show { visibility: visible; opacity: 1; z-index: 10; }
-        iframe { width: 100%; height: 100%; border: none; }
+        /* HỆ THỐNG TAB SONG SONG */
+        .tab-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        /* Mặc định Tab VR nằm trên, Tab Shop nằm dưới nhưng vẫn đang LOAD */
+        #tab-vr { z-index: 20; visibility: visible; }
+        #tab-shop { z-index: 10; visibility: visible; }
 
-        #ui-canvas { position: absolute; top: 0; left: 0; z-index: 500; pointer-events: none; }
-        #ai-menu { position: fixed; top: 90px; left: 20px; z-index: 8000; width: 260px; background: white; padding: 20px; border-radius: 20px; display: none; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        /* LỚP PHỦ GIỚI THIỆU */
+        #intro-layer { 
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        }
+
+        #ui-canvas { position: absolute; top: 0; left: 0; z-index: 100; pointer-events: none; }
+        #ai-menu { position: fixed; top: 90px; left: 20px; z-index: 9000; width: 260px; background: white; padding: 20px; border-radius: 20px; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
@@ -44,60 +46,72 @@
         <video id="v-intro" width="100%" autoplay muted playsinline loop>
             <source src="LINK_VIDEO_CỦA_BẠN.mp4" type="video/mp4">
         </video>
-        <button onclick="startExperience()" style="margin-top:20px; padding:15px 40px; background:var(--primary); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer; font-size:18px;">KHÁM PHÁ NGAY</button>
+        <div style="display:flex; gap:15px;">
+            <button onclick="enterApp('vr')" style="margin-top:20px; padding:15px 30px; background:var(--primary); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">XEM TOUR VR</button>
+            <button onclick="enterApp('shop')" style="margin-top:20px; padding:15px 30px; background:var(--success); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">VÀO GIỎ HÀNG 🛒</button>
+        </div>
     </div>
 
     <div id="main-nav">
         <button class="nav-btn" onclick="toggleAI()">☰</button>
-        <button class="nav-btn active" id="btn-vr" onclick="switchView('vr')">📍</button>
-        <button class="nav-btn" id="btn-shop" onclick="switchView('shop')">🛒</button>
+        <button class="nav-btn active" id="btn-vr" onclick="showTab('vr')">📍</button>
+        <button class="nav-btn" id="btn-shop" onclick="showTab('shop')">🛒</button>
     </div>
 
-    <div id="tab-vr" class="content-tab show">
+    <div id="tab-vr" class="tab-wrapper">
         <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
         <canvas id="ui-canvas"></canvas>
     </div>
 
-    <div id="tab-shop" class="content-tab">
+    <div id="tab-shop" class="tab-wrapper">
         <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
     </div>
 
     <div id="ai-menu">
-        <h3>Ninh Thuận AI</h3>
-        <p>Tải ảnh để check-in 3D</p>
+        <h3 style="margin:0">Ninh Thuận AI</h3>
+        <p style="font-size:13px">Hệ thống chụp ảnh bưu thiếp AI</p>
     </div>
 
     <script>
-        // Khi bấm nút bắt đầu
-        function startExperience() {
-            const intro = document.getElementById('intro-layer');
-            const video = document.getElementById('v-intro');
-            video.pause();
-            intro.style.display = 'none'; // Ẩn video
-            document.getElementById('main-nav').style.display = 'flex'; // Hiện nút bấm
+        // Khi người dùng bấm nút ở màn hình Intro
+        function enterApp(mode) {
+            const vid = document.getElementById('v-intro');
+            if(vid) vid.pause();
+            
+            document.getElementById('intro-layer').style.display = 'none';
+            document.getElementById('main-nav').style.display = 'flex';
+            
+            showTab(mode); // Chuyển ngay đến Tab người dùng chọn
         }
 
-        // Chuyển view bằng cách đổi Độ hiển thị (Visibility) thay vì đổi Link
-        function switchView(type) {
-            const tabVr = document.getElementById('tab-vr');
-            const tabShop = document.getElementById('tab-shop');
+        // Hàm chuyển đổi Tab bằng cách thay đổi Z-INDEX
+        function showTab(type) {
+            const vr = document.getElementById('tab-vr');
+            const shop = document.getElementById('tab-shop');
             const btnVr = document.getElementById('btn-vr');
             const btnShop = document.getElementById('btn-shop');
 
-            // Reset
-            tabVr.classList.remove('show');
-            tabShop.classList.remove('show');
-            btnVr.classList.remove('active');
-            btnShop.classList.remove('active');
-            btnShop.classList.remove('shop-active');
-
             if(type === 'vr') {
-                tabVr.classList.add('show');
+                // Đẩy VR lên trên cùng
+                vr.style.zIndex = "50";
+                shop.style.zIndex = "10";
+                
+                // Cập nhật nút
                 btnVr.classList.add('active');
+                btnShop.classList.remove('shop-active');
+                
+                // Hiện menu AI
                 document.getElementById('ui-canvas').style.display = 'block';
             } else {
-                tabShop.classList.add('show');
+                // Đẩy Shop lên trên cùng
+                shop.style.zIndex = "50";
+                vr.style.zIndex = "10";
+                
+                // Cập nhật nút
                 btnShop.classList.add('shop-active');
+                btnVr.classList.remove('active');
+                
+                // Ẩn menu AI để không vướng gian hàng
                 document.getElementById('ui-canvas').style.display = 'none';
                 document.getElementById('ai-menu').style.display = 'none';
             }
