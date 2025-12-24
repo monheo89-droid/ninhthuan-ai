@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Fix Triệt Để</title>
+    <title>Ninh Thuận AI - No More Video</title>
     <style>
         :root { --vr-color: #ff9800; --shop-color: #27ae60; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH TRÊN CÙNG */
+        /* THANH ĐIỀU HƯỚNG: ƯU TIÊN HIỂN THỊ CAO NHẤT */
         #nav-bar { 
-            position: fixed; top: 20px; left: 20px; z-index: 1000; 
+            position: fixed; top: 20px; left: 20px; z-index: 9999; 
             display: flex; gap: 15px; 
         }
         .icon-btn { 
@@ -22,19 +22,20 @@
         #btn-vr.active { background: var(--vr-color) !important; color: #fff; }
         #btn-shop.active { background: var(--shop-color) !important; color: #fff; }
 
-        /* LỚP PHỦ VIDEO BAN ĐẦU */
+        /* LỚP PHỦ VIDEO: CHỈ TỒN TẠI LẦN ĐẦU TIÊN */
         #intro-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 900; display: flex; align-items: center; justify-content: center; 
+            background: #000; z-index: 9998; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer;
         }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* HỆ THỐNG IFRAME SONG SONG */
-        .pano-container {
+        /* CONTAINER CHỨA 2 IFRAME SONG SONG (ĐỂ KHÔNG BỊ LOAD LẠI) */
+        .pano-page {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; /* Mặc định ẩn */
+            visibility: hidden; opacity: 0; transition: opacity 0.5s; z-index: 1;
         }
-        .pano-container.active { display: block; z-index: 100; }
+        .pano-page.active { visibility: visible; opacity: 1; z-index: 100; }
         
         iframe { width: 100%; height: 100%; border: none; }
     </style>
@@ -42,55 +43,61 @@
 <body>
 
     <div id="nav-bar">
-        <div class="icon-btn active" id="btn-vr" onclick="switchTab('vr')">📍</div>
-        <div class="icon-btn" id="btn-shop" onclick="switchTab('shop')">🛒</div>
+        <div class="icon-btn" id="btn-vr" onclick="handleSwitch('vr')">📍</div>
+        <div class="icon-btn" id="btn-shop" onclick="switchTabDirect('shop')">🛒</div>
     </div>
 
-    <div id="intro-overlay" onclick="startExperience()">
-        <video id="vid" autoplay muted loop playsinline>
+    <div id="intro-overlay" onclick="handleSwitch('vr')">
+        <video id="main-video" autoplay muted loop playsinline>
             <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
         </video>
-        <div style="position: absolute; color: white; bottom: 10%; font-weight: bold; font-size: 18px; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 30px; cursor: pointer;">NHẤN VÀO ĐỂ BẮT ĐẦU</div>
+        <div style="position:absolute; bottom:15%; color:white; background:rgba(0,0,0,0.6); padding:12px 25px; border-radius:30px; font-weight:bold;">CHẠM ĐỂ KHÁM PHÁ NINH THUẬN</div>
     </div>
 
-    <div id="tab-vr" class="pano-container active">
+    <div id="page-vr" class="pano-page">
         <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
     </div>
 
-    <div id="tab-shop" class="pano-container">
+    <div id="page-shop" class="pano-page">
         <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
     </div>
 
     <script>
-        // Hàm bắt đầu (xóa video vĩnh viễn)
-        function startExperience() {
-            const intro = document.getElementById('intro-overlay');
-            if (intro) {
-                document.getElementById('vid').pause();
-                intro.remove(); // XÓA HẲN VIDEO KHỎI TRANG
+        // HÀM TỔNG HỢP: XÓA VIDEO VÀ CHUYỂN CẢNH
+        function handleSwitch(mode) {
+            // 1. TẮT VÀ XÓA VIDEO VĨNH VIỄN
+            const overlay = document.getElementById('intro-overlay');
+            if (overlay) {
+                const vid = document.getElementById('main-video');
+                if (vid) vid.pause();
+                overlay.remove(); // XÓA SỔ KHỎI HTML, KHÔNG CÒN TRONG BỘ NHỚ
+                console.log("Video đã bị tắt bỏ vĩnh viễn.");
             }
+
+            // 2. HIỂN THỊ CẢNH TƯƠNG ỨNG
+            switchTabDirect(mode);
         }
 
-        // Hàm chuyển Tab (Không tải lại link)
-        function switchTab(mode) {
-            // Nếu video vẫn còn, xóa nó khi nhấn icon
-            startExperience();
+        function switchTabDirect(mode) {
+            // Nếu bấm vào icon khi chưa tắt video thì cũng tắt luôn
+            const overlay = document.getElementById('intro-overlay');
+            if (overlay) handleSwitch(mode);
 
-            const vrTab = document.getElementById('tab-vr');
-            const shopTab = document.getElementById('tab-shop');
-            const btnVr = document.getElementById('btn-vr');
-            const btnShop = document.getElementById('btn-shop');
+            const vr = document.getElementById('page-vr');
+            const shop = document.getElementById('page-shop');
+            const bVr = document.getElementById('btn-vr');
+            const bShop = document.getElementById('btn-shop');
 
             if (mode === 'vr') {
-                vrTab.classList.add('active');
-                shopTab.classList.remove('active');
-                btnVr.classList.add('active');
-                btnShop.classList.remove('active');
+                vr.classList.add('active');
+                shop.classList.remove('active');
+                bVr.classList.add('active');
+                bShop.classList.remove('active');
             } else {
-                shopTab.classList.add('active');
-                vrTab.classList.remove('active');
-                btnShop.classList.add('active');
-                btnVr.classList.remove('active');
+                shop.classList.add('active');
+                vr.classList.remove('active');
+                bShop.classList.add('active');
+                bVr.classList.remove('active');
             }
         }
     </script>
