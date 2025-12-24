@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Instant Access</title>
+    <title>Ninh Thuận AI - Stable Version</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
         
-        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH */
+        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH - ƯU TIÊN CAO NHẤT */
         .nav-bar { 
             position: fixed; top: 20px; left: 20px; z-index: 99999; 
             display: flex; gap: 10px; pointer-events: auto;
@@ -20,14 +20,19 @@
         #b-vr.active { background: #ff9800 !important; color: white; }
         #b-shop.active { background: #27ae60 !important; color: white; }
 
-        /* VIDEO GIỚI THIỆU */
+        /* LỚP PHỦ VIDEO */
         #intro-layer { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 100000; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background: #000; z-index: 100000; display: flex; align-items: center; justify-content: center; 
         }
 
-        /* KHUNG CHỨA IFRAME */
-        #content-frame { width: 100%; height: 100%; border: none; }
+        /* KHUNG CHỨA IFRAME SONG SONG (Tránh mất khi nhấn OK) */
+        .tab-frame {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; /* Mặc định ẩn */
+        }
+        .tab-frame.active { display: block; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -36,54 +41,67 @@
         <video id="v-intro" width="100%" autoplay muted loop playsinline>
             <source src="LINK_VIDEO_CỦA_BẠN.mp4" type="video/mp4">
         </video>
-        <div style="position: absolute; bottom: 15%; display: flex; gap: 20px;">
-            <button onclick="accessNow('vr')" style="padding:15px 35px; background:#ff9800; color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer; font-size:16px;">📍 XEM TOUR VR</button>
-            <button onclick="accessNow('shop')" style="padding:15px 35px; background:#27ae60; color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer; font-size:16px;">🛒 VÀO GIAN HÀNG</button>
+        <div style="position: absolute; bottom: 20%; display: flex; gap: 20px;">
+            <button onclick="goDirect('vr')" style="padding:15px 35px; background:#ff9800; color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">📍 TOUR VR</button>
+            <button onclick="goDirect('shop')" style="padding:15px 35px; background:#27ae60; color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">🛒 GIAN HÀNG</button>
         </div>
     </div>
 
-    <div class="nav-bar">
-        <button class="nav-btn" id="b-vr" onclick="changeMode('vr')">📍</button>
-        <button class="nav-btn" id="b-shop" onclick="changeMode('shop')">🛒</button>
+    <div class="nav-bar" id="main-nav" style="display:none;">
+        <button class="nav-btn" onclick="location.reload()">☰</button>
+        <button class="nav-btn" id="b-vr" onclick="switchTab('vr')">📍</button>
+        <button class="nav-btn" id="b-shop" onclick="switchTab('shop')">🛒</button>
     </div>
 
-    <iframe id="content-frame" src=""></iframe>
+    <div id="frame-vr" class="tab-frame">
+        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+    </div>
+
+    <div id="frame-shop" class="tab-frame">
+        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+    </div>
 
     <script>
-        // Link Scene cụ thể (Bạn nên lấy link dẫn trực tiếp vào Scene đó trong Panoee)
-        const URL_VR = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c";
-        const URL_SHOP = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"; 
-
-        // HÀM CLICK ĐẦU TIÊN: Bỏ qua video và vào thẳng mục đã chọn
-        function accessNow(mode) {
-            const intro = document.getElementById('intro-layer');
-            const video = document.getElementById('v-intro');
-            
-            if (video) video.pause();
-            intro.remove(); // Xóa sạch lớp phủ video để giải phóng click
-            
-            changeMode(mode);
+        // Hàm vào thẳng từ màn hình Intro
+        function goDirect(mode) {
+            document.getElementById('intro-layer').remove(); // Xóa hẳn lớp intro
+            document.getElementById('main-nav').style.display = 'flex';
+            switchTab(mode);
         }
 
-        // HÀM CHUYỂN ĐỔI: Chạy ngay lập tức khi nhấn nút
-        function changeMode(mode) {
-            const iframe = document.getElementById('content-frame');
-            const btnVr = document.getElementById('b-vr');
-            const btnShop = document.getElementById('b-shop');
+        // Hàm chuyển Tab dùng LocalStorage để ghi nhớ, tránh mất khi trình duyệt "OK"
+        function switchTab(mode) {
+            const fVr = document.getElementById('frame-vr');
+            const fShop = document.getElementById('frame-shop');
+            const bVr = document.getElementById('b-vr');
+            const bShop = document.getElementById('b-shop');
 
-            // Reset trạng thái nút
-            btnVr.classList.remove('active');
-            btnShop.classList.remove('active');
+            // Ẩn tất cả trước
+            fVr.classList.remove('active');
+            fShop.classList.remove('active');
+            bVr.classList.remove('active');
+            bShop.classList.remove('active');
 
-            if (mode === 'vr') {
-                btnVr.classList.add('active');
-                iframe.src = URL_VR;
+            // Hiện Tab tương ứng
+            if(mode === 'vr') {
+                fVr.classList.add('active');
+                bVr.classList.add('active');
             } else {
-                btnShop.classList.add('active');
-                // Ép Iframe tải link Gian hàng số ngay lập tức
-                iframe.src = URL_SHOP; 
+                fShop.classList.add('active');
+                bShop.classList.add('active');
             }
+            
+            // Ghi nhớ vào bộ nhớ trình duyệt
+            localStorage.setItem('currentTab', mode);
         }
+
+        // Tự động kiểm tra nếu có load lại
+        window.onload = () => {
+            const savedTab = localStorage.getItem('currentTab');
+            if(savedTab && !document.getElementById('intro-layer')) {
+                switchTab(savedTab);
+            }
+        };
     </script>
 </body>
 </html>
