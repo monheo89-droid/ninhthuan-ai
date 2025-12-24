@@ -8,125 +8,92 @@
         :root { --primary: #ff9800; --success: #27ae60; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH - LUÔN NẰM TRÊN CÙNG */
+        /* THANH ĐIỀU HƯỚNG CỐ ĐỊNH - ƯU TIÊN 1 */
         #main-nav { 
-            position: fixed; top: 20px; left: 20px; z-index: 10000; 
-            display: none; gap: 12px; 
+            position: fixed; top: 20px; left: 20px; z-index: 99999; 
+            display: flex; gap: 12px; pointer-events: auto;
         }
         .nav-btn { 
-            width: 55px; height: 55px; border-radius: 50%; border: 3px solid white;
-            background: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.3s;
+            width: 50px; height: 50px; border-radius: 50%; border: 3px solid white;
+            background: white; font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
         }
-        .nav-btn.active { background: var(--primary) !important; color: white; }
-        .nav-btn.shop-active { background: var(--success) !important; color: white; }
+        /* Màu cam cho Tour, màu xanh cho Giỏ hàng giống ảnh của bạn */
+        #btn-vr.active { background: var(--primary) !important; color: white; }
+        #btn-shop.active { background: var(--success) !important; color: white; }
 
         /* HỆ THỐNG TAB SONG SONG */
-        .tab-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        
-        /* Mặc định Tab VR nằm trên, Tab Shop nằm dưới nhưng vẫn đang LOAD */
-        #tab-vr { z-index: 20; visibility: visible; }
-        #tab-shop { z-index: 10; visibility: visible; }
-
-        iframe { width: 100%; height: 100%; border: none; }
-        
-        /* LỚP PHỦ GIỚI THIỆU */
-        #intro-layer { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        .tab-content { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: none; /* Mặc định ẩn */
         }
+        .tab-content.active { display: block; }
+        
+        iframe { width: 100%; height: 100%; border: none; }
 
-        #ui-canvas { position: absolute; top: 0; left: 0; z-index: 100; pointer-events: none; }
-        #ai-menu { position: fixed; top: 90px; left: 20px; z-index: 9000; width: 260px; background: white; padding: 20px; border-radius: 20px; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        /* VIDEO GIỚI THIỆU */
+        #intro-overlay { 
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: #000; z-index: 100000; display: flex; align-items: center; justify-content: center; 
+        }
     </style>
 </head>
 <body>
 
-    <div id="intro-layer">
+    <div id="intro-overlay">
         <video id="v-intro" width="100%" autoplay muted playsinline loop>
             <source src="LINK_VIDEO_CỦA_BẠN.mp4" type="video/mp4">
         </video>
-        <div style="display:flex; gap:15px;">
-            <button onclick="enterApp('vr')" style="margin-top:20px; padding:15px 30px; background:var(--primary); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">XEM TOUR VR</button>
-            <button onclick="enterApp('shop')" style="margin-top:20px; padding:15px 30px; background:var(--success); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">VÀO GIỎ HÀNG 🛒</button>
-        </div>
+        <button onclick="startApp('vr')" style="position:absolute; bottom:15%; padding:15px 40px; background:var(--primary); color:white; border:none; border-radius:30px; font-weight:bold; cursor:pointer;">KHÁM PHÁ TOUR VR</button>
     </div>
 
     <div id="main-nav">
         <button class="nav-btn" onclick="toggleAI()">☰</button>
-        <button class="nav-btn active" id="btn-vr" onclick="showTab('vr')">📍</button>
-        <button class="nav-btn" id="btn-shop" onclick="showTab('shop')">🛒</button>
+        <button class="nav-btn active" id="btn-vr" onclick="switchTab('vr')">📍</button>
+        <button class="nav-btn" id="btn-shop" onclick="switchTab('shop')">🛒</button>
     </div>
 
-    <div id="tab-vr" class="tab-wrapper">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-        <canvas id="ui-canvas"></canvas>
-    </div>
-
-    <div id="tab-shop" class="tab-wrapper">
+    <div id="tab-vr" class="tab-content active">
         <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
     </div>
 
-    <div id="ai-menu">
-        <h3 style="margin:0">Ninh Thuận AI</h3>
-        <p style="font-size:13px">Hệ thống chụp ảnh bưu thiếp AI</p>
+    <div id="tab-shop" class="tab-content">
+        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
     </div>
 
     <script>
-        // Khi người dùng bấm nút ở màn hình Intro
-        function enterApp(mode) {
+        function startApp(mode) {
             const vid = document.getElementById('v-intro');
             if(vid) vid.pause();
-            
-            document.getElementById('intro-layer').style.display = 'none';
-            document.getElementById('main-nav').style.display = 'flex';
-            
-            showTab(mode); // Chuyển ngay đến Tab người dùng chọn
+            document.getElementById('intro-overlay').remove(); // Xóa hẳn video để không làm đơ nút
+            switchTab(mode);
         }
 
-        // Hàm chuyển đổi Tab bằng cách thay đổi Z-INDEX
-        function showTab(type) {
-            const vr = document.getElementById('tab-vr');
-            const shop = document.getElementById('tab-shop');
+        function switchTab(mode) {
+            // Ẩn/Hiện Tab tức thì
+            const vrTab = document.getElementById('tab-vr');
+            const shopTab = document.getElementById('tab-shop');
             const btnVr = document.getElementById('btn-vr');
             const btnShop = document.getElementById('btn-shop');
 
-            if(type === 'vr') {
-                // Đẩy VR lên trên cùng
-                vr.style.zIndex = "50";
-                shop.style.zIndex = "10";
-                
-                // Cập nhật nút
+            if(mode === 'vr') {
+                vrTab.classList.add('active');
+                shopTab.classList.remove('active');
                 btnVr.classList.add('active');
-                btnShop.classList.remove('shop-active');
-                
-                // Hiện menu AI
-                document.getElementById('ui-canvas').style.display = 'block';
+                btnShop.classList.remove('active');
             } else {
-                // Đẩy Shop lên trên cùng
-                shop.style.zIndex = "50";
-                vr.style.zIndex = "10";
-                
-                // Cập nhật nút
-                btnShop.classList.add('shop-active');
+                shopTab.classList.add('active');
+                vrTab.classList.remove('active');
+                btnShop.classList.add('active');
                 btnVr.classList.remove('active');
-                
-                // Ẩn menu AI để không vướng gian hàng
-                document.getElementById('ui-canvas').style.display = 'none';
-                document.getElementById('ai-menu').style.display = 'none';
             }
         }
 
-        function toggleAI() {
-            const m = document.getElementById('ai-menu');
-            m.style.display = (m.style.display === 'block') ? 'none' : 'block';
-        }
-
-        window.onload = () => {
-            const c = document.getElementById('ui-canvas');
-            c.width = window.innerWidth;
-            c.height = window.innerHeight;
-        };
+        // Tự động ẩn intro sau khi load xong (tùy chọn)
+        window.addEventListener('load', () => {
+            console.log("Hệ thống đã sẵn sàng");
+        });
     </script>
 </body>
 </html>
