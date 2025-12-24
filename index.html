@@ -3,78 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Tour & Shop</title>
+    <title>Ninh Thuận AI - Pro Edition</title>
     <style>
         :root { --primary: #ff9800; --success: #27ae60; --dark: #2c3e50; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
 
-        /* --- Quản lý hiển thị Tab --- */
-        .tab-content { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        /* Quản lý Tab */
+        .tab-content { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         .tab-content.active { display: block; }
-        iframe { width: 100%; height: 100%; border: none; position: absolute; }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- Thanh điều hướng (Luôn hiện) --- */
+        /* Thanh điều hướng */
         .nav-bar { position: absolute; top: 20px; left: 20px; z-index: 2000; display: flex; gap: 10px; }
         .nav-btn { 
-            width: 45px; height: 45px; border-radius: 50%; border: none; 
+            width: 48px; height: 48px; border-radius: 50%; border: none; 
             background: white; color: var(--dark); font-size: 20px; cursor: pointer; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; 
-            transition: 0.3s;
+            transition: 0.2s ease;
         }
-        .nav-btn.active-tab { background: var(--primary); color: white; }
+        .nav-btn.active-tab { background: var(--primary); color: white; transform: scale(1.1); }
         .nav-btn.cart-btn.active-tab { background: var(--success); }
 
-        /* --- Menu AI (Chỉ hiện ở Tab 1) --- */
+        /* Menu AI */
         #ai-menu-panel { 
-            position: absolute; top: 75px; left: 20px; z-index: 1000; width: 280px; 
+            position: absolute; top: 85px; left: 20px; z-index: 1000; width: 280px; 
             background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); 
             padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: 0.3s; transform-origin: top left;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        #ai-menu-panel.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
+        #ai-menu-panel.hidden { opacity: 0; transform: translateY(-20px) scale(0.9); pointer-events: none; }
 
-        /* --- Các nút lệnh trong Menu --- */
-        .btn-main { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; color: white; }
+        .btn-main { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; color: white; font-size: 14px; }
         .btn-upload { background: var(--primary); }
         .btn-capture { background: var(--success); }
 
-        /* --- Canvas người --- */
+        /* Canvas và lớp phủ */
         #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; pointer-events: none; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: none; color: white; flex-direction: column; align-items: center; justify-content: center; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; display: none; color: white; flex-direction: column; align-items: center; justify-content: center; }
+        #guide-frame { position: absolute; top: 15vh; left: 55vw; width: 320px; height: 450px; border: 2px dashed #fff; z-index: 400; pointer-events: none; border-radius: 12px; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="loading">♻️ ĐANG TÁCH NỀN AI...</div>
+    <div id="loading">♻️ ĐANG XỬ LÝ AI...</div>
 
     <div class="nav-bar">
-        <button class="nav-btn" id="btn-toggle" onclick="toggleMenu()" title="Ẩn/Hiện Menu">☰</button>
-        <button class="nav-btn active-tab" id="btn-vr" onclick="switchTab('vr-tab')" title="Tour Du Lịch">📍</button>
-        <button class="nav-btn cart-btn" id="btn-shop" onclick="switchTab('shop-tab')" title="Gian Hàng Số">🛒</button>
+        <button class="nav-btn" onclick="toggleMenu()" title="Cài đặt">☰</button>
+        <button class="nav-btn active-tab" id="btn-vr" onclick="switchTab('vr-tab')">📍</button>
+        <button class="nav-btn cart-btn" id="btn-shop" onclick="switchTab('shop-tab')">🛒</button>
     </div>
 
     <div id="vr-tab" class="tab-content active">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-        
+        <iframe id="iframe-vr" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
         <canvas id="ui-canvas"></canvas>
+        <div id="guide-frame"></div>
 
         <div id="ai-menu-panel">
-            <h3 style="margin-top:0">Ninh Thuận AI</h3>
+            <h3 style="margin:0 0 10px 0">Ninh Thuận AI</h3>
             <label class="btn-main btn-upload" style="display:block; text-align:center;">
                 📸 Tải ảnh người
-                <input type="file" id="input-file" style="display:none" onchange="processAI(this)">
+                <input type="file" id="input-file" accept="image/*" style="display:none" onchange="processAI(this)">
             </label>
 
-            <div id="capture-tools" style="display:none; margin-top:15px;">
-                <p style="font-size:12px; margin-bottom:5px;">Phóng to/nhỏ:</p>
+            <div id="edit-controls" style="display:none; margin-top:15px;">
+                <p style="font-size:12px; margin-bottom:5px;">Kích thước nhân vật:</p>
                 <input type="range" id="size-slider" min="0.1" max="2.5" step="0.1" value="1.0" style="width:100%">
-                <button class="btn-main btn-capture" onclick="alert('Bắt đầu chụp ảnh...')">🎁 Xuất bưu thiếp</button>
+                <button class="btn-main btn-capture" onclick="startCapture()">🎁 Xuất bưu thiếp</button>
             </div>
         </div>
     </div>
 
     <div id="shop-tab" class="tab-content">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+        <iframe id="iframe-shop" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
     </div>
 
     <script>
@@ -88,35 +88,39 @@
             canvas.height = window.innerHeight;
         };
 
-        // Hàm ẩn/hiện Menu ☰
+        // HÀM CHUYỂN TAB CẢI TIẾN - SỬA LỖI BỊ ĐƠ
+        function switchTab(tabId) {
+            // 1. Reset tất cả các lớp nội dung
+            const tabs = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            
+            // 2. Reset trạng thái nút
+            document.getElementById('btn-vr').classList.remove('active-tab');
+            document.getElementById('btn-shop').classList.remove('active-tab');
+
+            // 3. Kích hoạt Tab mới
+            document.getElementById(tabId).classList.add('active');
+
+            // 4. Cập nhật giao diện phụ trợ
+            if (tabId === 'vr-tab') {
+                document.getElementById('btn-vr').classList.add('active-tab');
+                document.getElementById('ai-menu-panel').style.opacity = "1";
+                document.getElementById('ui-canvas').style.display = "block";
+            } else {
+                document.getElementById('btn-shop').classList.add('active-tab');
+                document.getElementById('ai-menu-panel').style.opacity = "0";
+                document.getElementById('ui-canvas').style.display = "none";
+            }
+        }
+
         function toggleMenu() {
             const panel = document.getElementById('ai-menu-panel');
             panel.classList.toggle('hidden');
         }
 
-        // Hàm chuyển đổi TAB 📍 vs 🛒
-        function switchTab(tabId) {
-            // Ẩn tất cả
-            document.getElementById('vr-tab').classList.remove('active');
-            document.getElementById('shop-tab').classList.remove('active');
-            document.getElementById('btn-vr').classList.remove('active-tab');
-            document.getElementById('btn-shop').classList.remove('active-tab');
-
-            // Hiện Tab được chọn
-            document.getElementById(tabId).classList.add('active');
-
-            if (tabId === 'vr-tab') {
-                document.getElementById('btn-vr').classList.add('active-tab');
-                document.getElementById('ai-menu-panel').style.display = 'block';
-                canvas.style.display = 'block';
-            } else {
-                document.getElementById('btn-shop').classList.add('active-tab');
-                document.getElementById('ai-menu-panel').style.display = 'none';
-                canvas.style.display = 'none';
-            }
-        }
-
-        // Hàm xử lý AI tách nền
+        // XỬ LÝ AI
         async function processAI(input) {
             if (!input.files[0]) return;
             document.getElementById('loading').style.display = "flex";
@@ -133,12 +137,13 @@
                     const ratio = userImg.width / userImg.height;
                     imgPos.w = 400 * ratio; imgPos.h = 400;
                     document.getElementById('loading').style.display = "none";
-                    document.getElementById('capture-tools').style.display = "block";
+                    document.getElementById('edit-controls').style.display = "block";
+                    document.getElementById('guide-frame').style.display = "block";
                     render();
                 };
                 userImg.src = URL.createObjectURL(blob);
             } catch (e) {
-                alert("Lỗi AI!");
+                alert("Lỗi kết nối AI!");
                 document.getElementById('loading').style.display = "none";
             }
         }
@@ -151,6 +156,12 @@
             }
         }
         document.getElementById('size-slider').oninput = render;
+
+        // Logic xuất ảnh (Giả lập để bạn tích hợp hàm getDisplayMedia cũ của bạn)
+        function startCapture() {
+            alert("Vui lòng cho phép chia sẻ màn hình để xuất bưu thiếp chất lượng cao!");
+            // Gọi hàm executePerfectCapture() cũ của bạn ở đây
+        }
     </script>
 </body>
 </html>
