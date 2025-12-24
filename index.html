@@ -3,42 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Gian Hàng Số</title>
+    <title>Ninh Thuận AI - Gian Hàng Số Pro</title>
     <style>
-        :root { 
-            --primary: #ff9800; 
-            --glass: rgba(255, 255, 255, 0.85);
-            --dark: #2c3e50;
-        }
-        
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #000; }
+        :root { --primary: #ff9800; --glass: rgba(255, 255, 255, 0.85); --dark: #2c3e50; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
         iframe { width: 100%; height: 100%; border: none; position: absolute; z-index: 1; }
         #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
         
-        /* --- Nút điều hướng góc trái --- */
+        /* Nút điều hướng */
         .top-btns { position: absolute; top: 20px; left: 20px; z-index: 300; display: flex; gap: 12px; }
         .round-btn {
-            width: 45px; height: 45px; background: var(--primary); color: white;
+            width: 48px; height: 48px; background: var(--primary); color: white;
             border: none; border-radius: 50%; cursor: pointer; font-size: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
             transition: 0.3s;
         }
         .round-btn.cart { background: #27ae60; }
-        .round-btn:hover { transform: scale(1.1); }
 
-        /* --- Sidebar Panel --- */
+        /* Sidebar */
         .controls { 
-            position: absolute; top: 75px; left: 20px; z-index: 200; width: 280px; 
+            position: absolute; top: 85px; left: 20px; z-index: 200; width: 280px; 
             background: var(--glass); backdrop-filter: blur(15px);
-            padding: 20px; border-radius: 20px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.4);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform-origin: top left;
+            padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            transition: 0.4s; transform-origin: top left;
         }
         .controls.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
 
-        /* --- Popup Gian Hàng --- */
+        /* Popup Shop */
         #shop-popup {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
             width: 90%; max-width: 350px; background: white; z-index: 500;
@@ -51,22 +42,15 @@
             display: flex; align-items: center; gap: 12px; background: #f8f9fa;
             padding: 10px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee;
         }
-        .product-card img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; }
-        .product-info { flex: 1; }
-        .product-info h4 { margin: 0; font-size: 13px; color: var(--dark); }
-        .product-info p { margin: 2px 0; font-size: 11px; color: #e67e22; font-weight: bold; }
-        .buy-btn {
-            background: #27ae60; color: white; padding: 5px 10px; border-radius: 20px;
-            text-decoration: none; font-size: 10px; font-weight: bold; display: inline-block;
-        }
+        .product-card img { width: 55px; height: 55px; border-radius: 10px; object-fit: cover; }
+        .buy-btn { background: #27ae60; color: white; padding: 6px 12px; border-radius: 20px; text-decoration: none; font-size: 11px; font-weight: bold; }
 
         #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 450; display: none; backdrop-filter: blur(3px); }
 
-        /* Giữ nguyên các Style cũ của bạn bên dưới... */
-        .label-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: fit-content; margin: 0 auto; padding: 8px 15px; background: var(--primary); color: white; border-radius: 30px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
-        .btn-save { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; font-size: 15px; background: #27ae60; }
+        .label-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: fit-content; margin: 0 auto; padding: 10px 20px; background: var(--primary); color: white; border-radius: 30px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .btn-save { width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; background: #27ae60; font-size: 16px; }
         #countdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 150px; color: white; font-weight: 900; z-index: 2000; display: none; }
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .loader { width: 40px; height: 40px; border: 4px solid #fff; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -76,61 +60,55 @@
 <div id="overlay" onclick="closeShop()"></div>
 
 <div class="top-btns">
-    <button class="round-btn" onclick="toggleMenu()" id="toggle-menu">☰</button>
-    <button class="round-btn cart" onclick="openShop()" title="Gian hàng đặc sản">🛒</button>
+    <button class="round-btn" onclick="toggleMenu()">☰</button>
+    <button class="round-btn cart" onclick="openShop()">🛒</button>
 </div>
 
 <div id="shop-popup">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="margin:0; font-size: 18px;">Gian Hàng Số</h3>
-        <button onclick="closeShop()" style="border:none; background:none; font-size:22px; cursor:pointer;">&times;</button>
+        <h3 style="margin:0;">Gian Hàng Số OCOP</h3>
+        <button onclick="closeShop()" style="border:none; background:none; font-size:25px; cursor:pointer;">&times;</button>
     </div>
     
     <div class="product-card">
         <img src="https://vcdn1-dulich.vnecdn.net/2022/05/18/nho-ninh-thuan-1-1652844111.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=GfE_7hL-pY8T6Ua0_9yB1A" alt="Nho">
-        <div class="product-info">
-            <h4>Nho Tím Ninh Thuận</h4>
-            <p>75.000đ / kg</p>
-            <a href="https://ninhthuan.gov.vn/portal/Pages/dac-san-ninh-thuan.aspx" target="_blank" class="buy-btn">Xem chi tiết</a>
+        <div style="flex:1">
+            <h4 style="margin:0; font-size:14px;">Nho Tím Ninh Thuận</h4>
+            <p style="margin:2px 0; color:#e67e22; font-weight:bold; font-size:12px;">75.000đ</p>
         </div>
+        <a href="https://ninhthuan.gov.vn" target="_blank" class="buy-btn">Mua</a>
     </div>
 
     <div class="product-card">
         <img src="https://i.ytimg.com/vi/q1eW04I1pL0/maxresdefault.jpg" alt="Táo">
-        <div class="product-info">
-            <h4>Táo Xanh Phan Rang</h4>
-            <p>45.000đ / kg</p>
-            <a href="https://ninhthuan.gov.vn/portal/Pages/dac-san-ninh-thuan.aspx" target="_blank" class="buy-btn">Xem chi tiết</a>
+        <div style="flex:1">
+            <h4 style="margin:0; font-size:14px;">Táo Xanh Phan Rang</h4>
+            <p style="margin:2px 0; color:#e67e22; font-weight:bold; font-size:12px;">45.000đ</p>
         </div>
+        <a href="https://ninhthuan.gov.vn" target="_blank" class="buy-btn">Mua</a>
     </div>
-
-    <p style="font-size: 10px; color: #888; text-align: center; margin-top: 10px;">Dự án phát triển Du lịch & Kinh tế số Ninh Thuận</p>
 </div>
 
 <div id="countdown">3</div>
 <div id="loading"><div class="loader"></div><p>AI ĐANG TÁCH NỀN...</p></div>
 
-<div id="wrapper">
-    <iframe id="vr-frame" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-    <canvas id="ui-canvas"></canvas>
-    <div id="guide-frame" style="position: absolute; top: 15vh; left: 55vw; width: 320px; height: 450px; border: 2px dashed #fff; z-index: 50; pointer-events: none; border-radius: 12px; display:none;"></div>
+<iframe id="vr-frame" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+<canvas id="ui-canvas"></canvas>
+<div id="guide-frame" style="position: absolute; top: 15vh; left: 55vw; width: 320px; height: 450px; border: 2px dashed #fff; z-index: 50; pointer-events: none; border-radius: 12px; display:none;"></div>
 
-    <div class="controls" id="main-menu">
-        <h2 style="text-align: center; margin: 0 0 15px 0; font-size: 18px;">NINH THUẬN AI</h2>
-        <label for="input-file" class="label-btn">📸 Tải ảnh người</label>
-        <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
+<div class="controls" id="main-menu">
+    <h2 style="text-align:center; margin:0 0 15px 0; font-size:18px;">NINH THUẬN AI</h2>
+    <label for="input-file" class="label-btn">📸 Tải ảnh người</label>
+    <input type="file" id="input-file" accept="image/*" style="display:none" onchange="initAI(this)">
 
-        <div id="edit-area" style="display: none;">
-            <div style="font-size: 10px; color: #7f8c8d; margin: 15px 0 5px 5px; text-transform: uppercase;">Mẫu bưu thiếp</div>
-            <select id="frame-style" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px;">
-                <option value="modern">Trắng hiện đại</option>
-                <option value="vintage">Cổ điển (Sepia)</option>
-                <option value="festival">Lễ hội rực rỡ</option>
-            </select>
-            <input type="text" id="custom-text" value="NINH THUẬN 2025" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box;">
-            <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="1.0" style="width:100%;">
-            <button class="btn-save" onclick="startCapture()">🎁 Xuất bưu thiếp</button>
-        </div>
+    <div id="edit-area" style="display:none">
+        <select id="frame-style" style="width:100%; padding:10px; border-radius:8px; margin:15px 0 10px 0;">
+            <option value="modern">Trắng hiện đại</option>
+            <option value="vintage">Cổ điển</option>
+        </select>
+        <input type="text" id="custom-text" value="NINH THUẬN 2025" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">
+        <input type="range" id="size-slider" min="0.1" max="2.5" step="0.1" value="1.0" style="width:100%; margin-top:15px;">
+        <button class="btn-save" onclick="startCapture()">🎁 Xuất bưu thiếp</button>
     </div>
 </div>
 
@@ -140,26 +118,13 @@
     const ctx = canvas.getContext('2d');
     const guide = document.getElementById('guide-frame');
     const slider = document.getElementById('size-slider');
-    
     let userImg = null, imgPos = { x: 0, y: 0, w: 0, h: 0 };
 
     window.onload = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
 
-    function toggleMenu() {
-        const menu = document.getElementById('main-menu');
-        menu.classList.toggle('hidden');
-    }
-
-    function openShop() {
-        document.getElementById('shop-popup').classList.add('active');
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById('main-menu').classList.add('hidden');
-    }
-
-    function closeShop() {
-        document.getElementById('shop-popup').classList.remove('active');
-        document.getElementById('overlay').style.display = 'none';
-    }
+    function toggleMenu() { document.getElementById('main-menu').classList.toggle('hidden'); }
+    function openShop() { document.getElementById('shop-popup').classList.add('active'); document.getElementById('overlay').style.display='block'; }
+    function closeShop() { document.getElementById('shop-popup').classList.remove('active'); document.getElementById('overlay').style.display='none'; }
 
     async function initAI(input) {
         if (!input.files[0]) return;
@@ -182,17 +147,66 @@
                 render();
             };
             img.src = URL.createObjectURL(blob);
-        } catch (e) { alert("Lỗi tách nền!"); document.getElementById('loading').style.display = "none"; }
+        } catch (e) { alert("Lỗi AI!"); document.getElementById('loading').style.display="none"; }
     }
 
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (userImg) {
-            ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * slider.value, imgPos.h * slider.value);
-        }
+        if (userImg) ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * slider.value, imgPos.h * slider.value);
     }
 
-    // [Các hàm startCapture và executePerfectCapture cũ của bạn dán tiếp vào đây để giữ tính năng chụp ảnh]
+    async function startCapture() {
+        const countEl = document.getElementById('countdown');
+        countEl.style.display = "block";
+        let count = 3;
+        const timer = setInterval(async () => {
+            count--;
+            if (count > 0) countEl.innerText = count;
+            else { clearInterval(timer); countEl.style.display = "none"; await executePerfectCapture(); }
+        }, 1000);
+    }
+
+    async function executePerfectCapture() {
+        document.getElementById('main-menu').classList.add('hidden');
+        document.querySelector('.top-btns').style.display = "none";
+        guide.style.border = "none";
+        ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "browser", width: 3840, height: 2160 }, preferCurrentTab: true });
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        await video.play();
+
+        setTimeout(() => {
+            const outW = 2400, outH = 3200;
+            const f = document.createElement('canvas'); f.width = outW; f.height = outH;
+            const fc = f.getContext('2d');
+            const style = document.getElementById('frame-style').value;
+            const g = guide.getBoundingClientRect();
+            const sx = video.videoWidth / window.innerWidth;
+            const sy = video.videoHeight / window.innerHeight;
+
+            fc.fillStyle = (style === 'vintage') ? "#f4ece0" : "white";
+            fc.fillRect(0, 0, outW, outH);
+            fc.drawImage(video, g.left * sx, g.top * sy, g.width * sx, g.height * sy, 80, 80, outW - 160, outH - 600);
+            
+            const relX = (imgPos.x - g.left) / g.width;
+            const relY = (imgPos.y - g.top) / g.height;
+            fc.drawImage(userImg, 80 + (relX * (outW - 160)), 80 + (relY * (outH - 600)), (imgPos.w * slider.value) * ((outW - 160) / g.width), (imgPos.h * slider.value) * ((outH - 600) / g.height));
+
+            fc.fillStyle = "#2c3e50"; fc.textAlign = "center";
+            fc.font = "bold 110px Arial";
+            fc.fillText(document.getElementById('custom-text').value, outW/2, outH - 280);
+            
+            const link = document.createElement('a');
+            link.download = `NinhThuan_Card.png`;
+            link.href = f.toDataURL("image/png", 1.0);
+            link.click();
+            
+            stream.getTracks().forEach(t => t.stop());
+            setTimeout(() => location.reload(), 500); 
+        }, 1000);
+    }
 </script>
 </body>
 </html>
