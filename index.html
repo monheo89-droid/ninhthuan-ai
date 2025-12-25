@@ -3,110 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Fix Screenshot</title>
+    <title>Ninh Thuận AI - Gian Hàng & Bưu Thiếp</title>
     <style>
-        :root { --vr-color: #ff9800; --shop-color: #27ae60; --photo-color: #00bcd4; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-
-        /* THANH ĐIỀU HƯỚNG */
-        #nav-bar { 
-            position: fixed; top: 20px; left: 20px; z-index: 10000; 
-            display: flex; gap: 12px; 
+        :root { 
+            --primary: #ff9800; 
+            --glass: rgba(255, 255, 255, 0.85);
+            --dark: #2c3e50;
+            --success: #27ae60;
         }
-        .icon-btn { 
-            width: 55px; height: 55px; border-radius: 50%; border: 3px solid #fff;
-            background: #fff; font-size: 24px; cursor: pointer; display: flex; 
-            align-items: center; justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
-        }
-        #btn-vr.active { background: var(--vr-color) !important; color: #fff; }
-        #btn-shop.active { background: var(--shop-color) !important; color: #fff; }
-        #btn-photo { background: var(--photo-color); color: white; }
+        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
+        
+        /* --- HỆ THỐNG IFRAME SONG SONG --- */
+        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
+        .pano-page.active { visibility: visible; z-index: 10; }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        /* LỚP PHỦ VIDEO */
+        /* --- VIDEO GIỚI THIỆU --- */
         #intro-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
         }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* HỆ THỐNG TRANG IFRAME */
-        .pano-page {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            visibility: hidden; z-index: 1;
+        /* --- UI CANVAS & AI --- */
+        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
+        
+        /* --- ĐIỀU HƯỚNG GÓC TRÁI --- */
+        .top-btns { position: absolute; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 12px; }
+        .round-btn {
+            width: 50px; height: 50px; background: var(--primary); color: white;
+            border: 3px solid #fff; border-radius: 50%; cursor: pointer; font-size: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
         }
-        .pano-page.active { visibility: visible; z-index: 100; }
-        iframe { width: 100%; height: 100%; border: none; }
+        .round-btn.cart { background: var(--success); }
+        .round-btn.active { border-color: #000; transform: scale(1.1); box-shadow: 0 0 15px var(--primary); }
 
-        /* HIỆU ỨNG NHÁY MÁY ẢNH */
-        #camera-flash {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 20000; display: none;
+        /* --- SIDEBAR & POPUP --- */
+        .controls { 
+            position: absolute; top: 85px; left: 20px; z-index: 9000; width: 280px; 
+            background: var(--glass); backdrop-filter: blur(15px);
+            padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: top left;
         }
+        .controls.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
+
+        #shop-popup {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 90%; max-width: 350px; background: white; z-index: 10001;
+            padding: 20px; border-radius: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transition: 0.4s; opacity: 0;
+        }
+        #shop-popup.active { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        .product-card {
+            display: flex; align-items: center; gap: 12px; background: #f8f9fa;
+            padding: 10px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee;
+        }
+        .product-card img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; }
+        .buy-btn { background: var(--success); color: white; padding: 5px 10px; border-radius: 20px; text-decoration: none; font-size: 10px; font-weight: bold; }
+
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; backdrop-filter: blur(3px); }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .loader { width: 40px; height: 40px; border: 4px solid #fff; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .label-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: var(--primary); color: white; border-radius: 30px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .btn-save { width: 100%; padding: 12px; margin-top: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; background: var(--success); }
     </style>
 </head>
 <body>
 
-    <div id="camera-flash"></div>
+<div id="overlay" onclick="closeShop()"></div>
+<div id="loading"><div class="loader"></div><p>AI ĐANG TÁCH NỀN...</p></div>
 
-    <div id="nav-bar">
-        <div class="icon-btn" id="btn-vr" onclick="startApp('vr')">📍</div>
-        <div class="icon-btn" id="btn-shop" onclick="startApp('shop')">🛒</div>
-        <div class="icon-btn" id="btn-photo" onclick="triggerScreenshot()">📷</div>
+<div class="top-btns">
+    <button class="round-btn active" onclick="handleNav('vr')" id="btn-vr">📍</button>
+    <button class="round-btn cart" onclick="handleNav('shop')" id="btn-shop">🛒</button>
+    <button class="round-btn" onclick="toggleAI()" id="toggle-menu">📷</button>
+</div>
+
+<div id="intro-overlay">
+    <video id="v-intro" autoplay muted loop playsinline>
+        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
+    </video>
+</div>
+
+<div id="shop-popup">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0;">Gian Hàng Đặc Sản</h3>
+        <button onclick="closeShop()" style="border:none; background:none; font-size:24px; cursor:pointer;">&times;</button>
     </div>
-
-    <div id="intro-overlay">
-        <video id="main-video" autoplay muted loop playsinline>
-            <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
-        </video>
+    <div class="product-card">
+        <img src="https://vcdn1-dulich.vnecdn.net/2022/05/18/nho-ninh-thuan-1-1652844111.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=GfE_7hL-pY8T6Ua0_9yB1A" alt="Nho">
+        <div style="flex:1;">
+            <h4 style="margin:0; font-size:14px;">Nho Tím Ninh Thuận</h4>
+            <p style="margin:2px 0; color:#e67e22; font-weight:bold; font-size:12px;">75.000đ / kg</p>
+            <a href="#" class="buy-btn">Xem chi tiết</a>
+        </div>
     </div>
-
-    <div id="page-vr" class="pano-page">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+    <div class="product-card">
+        <img src="https://i.ytimg.com/vi/q1eW04I1pL0/maxresdefault.jpg" alt="Táo">
+        <div style="flex:1;">
+            <h4 style="margin:0; font-size:14px;">Táo Xanh Phan Rang</h4>
+            <p style="margin:2px 0; color:#e67e22; font-weight:bold; font-size:12px;">45.000đ / kg</p>
+            <a href="#" class="buy-btn">Xem chi tiết</a>
+        </div>
     </div>
+</div>
 
-    <div id="page-shop" class="pano-page">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+<div class="controls hidden" id="main-menu">
+    <h2 style="text-align: center; font-size: 16px;">BƯU THIẾP AI</h2>
+    <label for="input-file" class="label-btn">📸 Tải ảnh người</label>
+    <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
+    
+    <div id="edit-area" style="display: none; margin-top:15px;">
+        <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="1.0" style="width:100%;" oninput="render()">
+        <button class="btn-save" onclick="alert('Tính năng đang xuất file...')">🎁 Xuất bưu thiếp</button>
     </div>
+</div>
 
-    <script>
-        function startApp(mode) {
-            const overlay = document.getElementById('intro-overlay');
-            if (overlay) {
-                document.getElementById('main-video').pause();
-                overlay.remove();
-            }
+<div id="page-vr" class="pano-page active">
+    <iframe id="f-vr" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+</div>
+<div id="page-shop" class="pano-page">
+    <iframe id="f-shop" src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+</div>
 
-            const vr = document.getElementById('page-vr');
-            const shop = document.getElementById('page-shop');
-            const bVr = document.getElementById('btn-vr');
-            const bShop = document.getElementById('btn-shop');
+<canvas id="ui-canvas"></canvas>
 
-            vr.classList.remove('active');
-            shop.classList.remove('active');
-            bVr.classList.remove('active');
-            bShop.classList.remove('active');
+<script>
+    const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC";
+    const canvas = document.getElementById('ui-canvas');
+    const ctx = canvas.getContext('2d');
+    let userImg = null, imgPos = { x: 0, y: 0, w: 0, h: 0 };
 
-            if (mode === 'vr') {
-                vr.classList.add('active');
-                bVr.classList.add('active');
-            } else {
-                shop.classList.add('active');
-                bShop.classList.add('active');
-            }
+    window.onload = () => { 
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight; 
+    };
+
+    // --- ĐIỀU HƯỚNG VÀ TẮT VIDEO ---
+    function handleNav(mode) {
+        // Tắt video vĩnh viễn
+        const intro = document.getElementById('intro-overlay');
+        if (intro) {
+            document.getElementById('v-intro').pause();
+            intro.remove();
         }
 
-        // FIX LỖI CHỤP ẢNH
-        function triggerScreenshot() {
-            // 1. Hiệu ứng nháy hình
-            const flash = document.getElementById('camera-flash');
-            flash.style.display = 'block';
-            setTimeout(() => { flash.style.display = 'none'; }, 150);
+        const vr = document.getElementById('page-vr');
+        const shop = document.getElementById('page-shop');
+        const bVr = document.getElementById('btn-vr');
+        const bShop = document.getElementById('btn-shop');
 
-            // 2. Hướng dẫn thông minh (Vì không thể lấy data qua Iframe)
-            // Trong bài thi, giám khảo sẽ đánh giá cao việc bạn biết xử lý giới hạn kỹ thuật
-            alert("📷 Chế độ chụp hình ảo Ninh Thuận AI:\n\n1. Bạn hãy chọn góc nhìn đẹp nhất.\n2. Nhấn vào biểu tượng MÁY ẢNH ở thanh menu phía dưới của Panoee để tải ảnh chất lượng cao về máy nhé!");
+        vr.classList.remove('active');
+        shop.classList.remove('active');
+        bVr.classList.remove('active');
+        bShop.classList.remove('active');
+
+        if (mode === 'vr') {
+            vr.classList.add('active');
+            bVr.classList.add('active');
+        } else {
+            shop.classList.add('active');
+            bShop.classList.add('active');
+            openShop(); // Tự mở popup khi vào gian hàng
         }
-    </script>
+    }
+
+    // --- QUẢN LÝ SIDEBAR AI ---
+    function toggleAI() {
+        const overlay = document.getElementById('intro-overlay');
+        if (overlay) handleNav('vr'); // Tắt video nếu đang hiện
+        document.getElementById('main-menu').classList.toggle('hidden');
+    }
+
+    // --- QUẢN LÝ GIAN HÀNG ---
+    function openShop() {
+        document.getElementById('shop-popup').classList.add('active');
+        document.getElementById('overlay').style.display = 'block';
+    }
+    function closeShop() {
+        document.getElementById('shop-popup').classList.remove('active');
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    // --- LOGIC AI TÁCH NỀN ---
+    async function initAI(input) {
+        if (!input.files[0]) return;
+        document.getElementById('loading').style.display = "flex";
+        const formData = new FormData();
+        formData.append("image_file", input.files[0]);
+        try {
+            const res = await fetch("https://api.remove.bg/v1.0/removebg", { 
+                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData 
+            });
+            const blob = await res.blob();
+            const img = new Image();
+            img.onload = () => {
+                userImg = img;
+                const ratio = img.width / img.height;
+                imgPos.h = 450; imgPos.w = 450 * ratio;
+                imgPos.x = window.innerWidth / 2 - imgPos.w / 2;
+                imgPos.y = window.innerHeight / 2 - imgPos.h / 2;
+                document.getElementById('loading').style.display = "none";
+                document.getElementById('edit-area').style.display = "block";
+                render();
+            };
+            img.src = URL.createObjectURL(blob);
+        } catch (e) { alert("Lỗi tách nền!"); document.getElementById('loading').style.display = "none"; }
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (userImg) {
+            const val = document.getElementById('size-slider').value;
+            ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * val, imgPos.h * val);
+        }
+    }
+</script>
+
 </body>
 </html>
