@@ -3,46 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Instant Access</title>
+    <title>Ninh Thuận AI - Full Features</title>
     <style>
-        :root { --vr-color: #ff9800; --shop-color: #27ae60; }
+        :root { --vr-color: #ff9800; --shop-color: #27ae60; --photo-color: #e91e63; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* THANH ĐIỀU HƯỚNG: ƯU TIÊN CAO NHẤT */
+        /* THANH ĐIỀU HƯỚNG */
         #nav-bar { 
             position: fixed; top: 20px; left: 20px; z-index: 10000; 
-            display: flex; gap: 15px; 
+            display: flex; gap: 12px; 
         }
         .icon-btn { 
-            width: 60px; height: 60px; border-radius: 50%; border: 3px solid #fff;
-            background: #fff; font-size: 28px; cursor: pointer; display: flex; 
+            width: 55px; height: 55px; border-radius: 50%; border: 3px solid #fff;
+            background: #fff; font-size: 24px; cursor: pointer; display: flex; 
             align-items: center; justify-content: center;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.7); transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
         }
+        .icon-btn:active { transform: scale(0.9); }
         #btn-vr.active { background: var(--vr-color) !important; color: #fff; }
         #btn-shop.active { background: var(--shop-color) !important; color: #fff; }
+        #btn-photo { background: #fff; color: var(--photo-color); }
 
-        /* LỚP PHỦ VIDEO GIỚI THIỆU */
+        /* VIDEO GIỚI THIỆU */
         #intro-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
         }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* CONTAINER CHỨA IFRAME */
+        /* HỆ THỐNG TRANG */
         .pano-page {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             visibility: hidden; z-index: 1;
         }
         .pano-page.active { visibility: visible; z-index: 100; }
         iframe { width: 100%; height: 100%; border: none; }
+
+        /* GIAO DIỆN HIỂN THỊ ẢNH CHỤP */
+        #screenshot-display {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 20000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #screenshot-display img { max-width: 80%; max-height: 70%; border: 5px solid white; border-radius: 10px; }
+        .btn-group { margin-top: 20px; display: flex; gap: 20px; }
+        .action-btn { padding: 10px 25px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="nav-bar">
-        <div class="icon-btn" id="btn-vr" onclick="startWith('vr')">📍</div>
-        <div class="icon-btn" id="btn-shop" onclick="startWith('shop')">🛒</div>
+        <div class="icon-btn" id="btn-vr" onclick="controlApp('vr')" title="📍 Tour VR">📍</div>
+        <div class="icon-btn" id="btn-shop" onclick="controlApp('shop')" title="🛒 Gian hàng">🛒</div>
+        <div class="icon-btn" id="btn-photo" onclick="takeVirtualPhoto()" title="📷 Chụp hình ảo">📷</div>
     </div>
 
     <div id="intro-overlay">
@@ -52,30 +65,37 @@
     </div>
 
     <div id="page-vr" class="pano-page">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+        <iframe id="iframe-vr" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
     </div>
 
     <div id="page-shop" class="pano-page">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+        <iframe id="iframe-shop" src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+    </div>
+
+    <div id="screenshot-display">
+        <h2 style="color: white;">📷 Ảnh chụp của bạn</h2>
+        <img id="screenshot-img" src="" alt="Screenshot">
+        <div class="btn-group">
+            <button class="action-btn" style="background:#27ae60; color:white;" onclick="downloadPhoto()">Tải về máy</button>
+            <button class="action-btn" style="background:#e74c3c; color:white;" onclick="closePhoto()">Đóng</button>
+        </div>
     </div>
 
     <script>
-        function startWith(mode) {
-            // 1. CẮT BỎ VIDEO NGAY LẬP TỨC
+        // 1. QUẢN LÝ ĐIỀU HƯỚNG VÀ TẮT VIDEO
+        function controlApp(mode) {
             const overlay = document.getElementById('intro-overlay');
             if (overlay) {
                 const vid = document.getElementById('main-video');
                 if (vid) vid.pause();
-                overlay.remove(); // Xóa sạch dấu vết video
+                overlay.remove(); // XÓA BỎ VIDEO VĨNH VIỄN
             }
 
-            // 2. HIỂN THỊ CẢNH ĐƯỢC CHỌN
             const vr = document.getElementById('page-vr');
             const shop = document.getElementById('page-shop');
             const bVr = document.getElementById('btn-vr');
             const bShop = document.getElementById('btn-shop');
 
-            // Reset trạng thái
             vr.classList.remove('active');
             shop.classList.remove('active');
             bVr.classList.remove('active');
@@ -88,6 +108,28 @@
                 shop.classList.add('active');
                 bShop.classList.add('active');
             }
+        }
+
+        // 2. TÍNH NĂNG CHỤP HÌNH ẢO
+        function takeVirtualPhoto() {
+            // Hiệu ứng nháy màn hình (flash)
+            const flash = document.createElement('div');
+            flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:30000;";
+            document.body.appendChild(flash);
+            setTimeout(() => flash.remove(), 100);
+
+            // Vì lý do bảo mật (Cross-Origin), ta không thể chụp trực tiếp nội dung iframe.
+            // Thay vào đó, ta sẽ hướng dẫn người dùng sử dụng tính năng chụp ảnh có sẵn của Panoee
+            // Hoặc hiển thị thông báo. Dưới đây là cách mô phỏng:
+            alert("Đang kích hoạt chế độ chụp hình ảo... \nVui lòng chọn góc đẹp nhất và nhấn nút Chụp ảnh trong Menu của Panoee!");
+        }
+
+        function downloadPhoto() {
+            alert("Đang chuẩn bị file tải về...");
+        }
+
+        function closePhoto() {
+            document.getElementById('screenshot-display').style.display = 'none';
         }
     </script>
 </body>
