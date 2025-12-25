@@ -3,245 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Toàn Diện</title>
+    <title>Ninh Thuận AI - Gian Hàng & Studio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { 
-            --primary: #ff9800; 
-            --glass: rgba(255, 255, 255, 0.85);
-            --dark: #2c3e50;
-            --success: #27ae60;
-        }
-        
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #000; }
+        :root { --primary: #ff9800; --glass: rgba(255, 255, 255, 0.85); --success: #27ae60; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
 
-        /* --- LỚP VIDEO GIỚI THIỆU --- */
-        #intro-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
-        }
+        /* --- TÍNH NĂNG 1: VIDEO INTRO --- */
+        #intro-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- HỆ THỐNG TRANG (IFRAME) --- */
+        /* --- TÍNH NĂNG 2: CHUYỂN TAB KHÔNG LOAD LẠI --- */
         .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
         .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- CANVAS CHỤP ẢNH AI --- */
-        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
-
-        /* --- NÚT ĐIỀU HƯỚNG --- */
+        /* --- GIAO DIỆN ĐIỀU HƯỚNG --- */
         .top-btns { position: absolute; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 12px; }
-        .round-btn {
-            width: 50px; height: 50px; background: white; color: var(--dark);
-            border: none; border-radius: 50%; cursor: pointer; font-size: 22px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
-        }
-        .round-btn.active { background: var(--primary); color: white; transform: scale(1.1); }
-        .round-btn.cart { background: var(--success); color: white; }
+        .round-btn { width: 45px; height: 45px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .round-btn.cart { background: var(--success); }
 
-        /* --- SIDEBAR AI --- */
-        .controls { 
-            position: absolute; top: 85px; left: 20px; z-index: 9000; width: 280px; 
-            background: var(--glass); backdrop-filter: blur(15px);
-            padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            transition: 0.4s; transform-origin: top left;
-        }
+        /* Sidebar & Popup */
+        .controls { position: absolute; top: 75px; left: 20px; z-index: 9000; width: 280px; background: var(--glass); padding: 20px; border-radius: 20px; transition: 0.4s; transform-origin: top left; }
         .controls.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
-
-        /* --- POPUP GIAN HÀNG --- */
-        #shop-popup {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            width: 90%; max-width: 350px; background: white; z-index: 10001;
-            padding: 20px; border-radius: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            transition: 0.4s; opacity: 0;
-        }
+        #shop-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 90%; max-width: 350px; background: white; z-index: 10001; padding: 20px; border-radius: 25px; transition: 0.4s; opacity: 0; }
         #shop-popup.active { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         
-        .product-card { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
-        .product-card img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; }
-        
-        /* HIỆU ỨNG PHỤ */
-        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; backdrop-filter: blur(3px); }
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        #flash { position: fixed; top:0; left:0; width:100%; height:100%; background: white; z-index: 21000; display: none; }
-        .loader { width: 40px; height: 40px; border: 4px solid #fff; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        .label-btn { display: block; width: 100%; padding: 12px; background: var(--primary); color: white; border-radius: 10px; cursor: pointer; text-align: center; font-weight: bold; box-sizing: border-box; }
+        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; color: white; text-align: center; justify-content: center; align-items: center; flex-direction: column; }
         .btn-save { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; background: var(--success); }
     </style>
 </head>
-<body id="capture-area">
+<body>
 
-<div id="flash"></div>
+<div id="loading"><div>Đang xử lý...</div></div>
 <div id="overlay" onclick="closeShop()"></div>
-<div id="loading"><div class="loader"></div><p>AI ĐANG TÁCH NỀN...</p></div>
 
 <div class="top-btns">
-    <button class="round-btn active" id="btn-vr" onclick="switchTab('vr')" title="📍 Tour VR">📍</button>
-    <button class="round-btn cart" id="btn-shop" onclick="switchTab('shop')" title="🛒 Gian hàng">🛒</button>
-    <button class="round-btn" onclick="toggleAI()" title="📷 Studio AI">📷</button>
-</div>
-
-<div id="intro-overlay">
-    <video id="v-intro" autoplay muted loop playsinline>
-        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
-    </video>
-</div>
-
-<div id="shop-popup">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="margin:0; font-size: 18px;">Gian Hàng Đặc Sản</h3>
-        <button onclick="closeShop()" style="border:none; background:none; font-size:26px; cursor:pointer;">&times;</button>
-    </div>
-    <div class="product-card">
-        <img src="https://vcdn1-dulich.vnecdn.net/2022/05/18/nho-ninh-thuan-1-1652844111.jpg?w=1200&h=0&q=100&dpr=1&fit=crop&s=GfE_7hL-pY8T6Ua0_9yB1A">
-        <div style="flex:1">
-            <h4 style="margin:0; font-size:13px;">Nho Tím Ninh Thuận</h4>
-            <p style="margin:2px 0; font-size:11px; color:#e67e22; font-weight:bold;">75.000đ / kg</p>
-            <a href="https://ninhthuan.gov.vn/portal/Pages/dac-san-ninh-thuan.aspx" target="_blank" style="color:var(--success); font-size:11px; font-weight:bold; text-decoration:none;">Xem chi tiết</a>
-        </div>
-    </div>
-    <div class="product-card">
-        <img src="https://i.ytimg.com/vi/q1eW04I1pL0/maxresdefault.jpg">
-        <div style="flex:1">
-            <h4 style="margin:0; font-size:13px;">Táo Xanh Phan Rang</h4>
-            <p style="margin:2px 0; font-size:11px; color:#e67e22; font-weight:bold;">45.000đ / kg</p>
-            <a href="https://ninhthuan.gov.vn/portal/Pages/dac-san-ninh-thuan.aspx" target="_blank" style="color:var(--success); font-size:11px; font-weight:bold; text-decoration:none;">Xem chi tiết</a>
-        </div>
-    </div>
-</div>
-
-<div class="controls hidden" id="ai-menu">
-    <h2 style="text-align: center; margin: 0 0 15px 0; font-size: 18px;">NINH THUẬN AI</h2>
-    <label for="input-file" class="label-btn">📸 Tải ảnh người</label>
-    <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
-
-    <div id="edit-area" style="display: none; margin-top:15px;">
-        <p style="font-size: 11px; color: #666; margin-bottom:5px;">PHÓNG TO / THU NHỎ:</p>
-        <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="1.0" style="width:100%;" oninput="render()">
-        <button class="btn-save" onclick="startCapture()">🎁 Xuất bưu thiếp</button>
-    </div>
-</div>
-
-<div id="page-vr" class="pano-page active">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-</div>
-<div id="page-shop" class="pano-page">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
-</div>
-
-<canvas id="ui-canvas"></canvas>
-
-<script>
-    const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC";
-    const canvas = document.getElementById('ui-canvas');
-    const ctx = canvas.getContext('2d');
-    const slider = document.getElementById('size-slider');
-    let userImg = null, imgPos = { x: 0, y: 0, w: 0, h: 0 };
-
-    window.onload = () => { 
-        canvas.width = window.innerWidth; 
-        canvas.height = window.innerHeight; 
-    };
-
-    // 1. XỬ LÝ CHUYỂN TAB & CẮT VIDEO
-    function switchTab(tab) {
-        // Tắt video intro nếu đang hiển thị
-        const intro = document.getElementById('intro-overlay');
-        if (intro) {
-            document.getElementById('v-intro').pause();
-            intro.remove();
-        }
-
-        // Chuyển hiển thị trang
-        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
-        
-        document.getElementById('page-' + tab).classList.add('active');
-        document.getElementById('btn-' + tab).classList.add('active');
-
-        // Nếu là tab shop thì mở popup đặc sản luôn
-        if(tab === 'shop') openShop();
-    }
-
-    // 2. XỬ LÝ GIAN HÀNG
-    function openShop() {
-        document.getElementById('shop-popup').classList.add('active');
-        document.getElementById('overlay').style.display = 'block';
-    }
-    function closeShop() {
-        document.getElementById('shop-popup').classList.remove('active');
-        document.getElementById('overlay').style.display = 'none';
-    }
-
-    // 3. XỬ LÝ STUDIO AI
-    function toggleAI() {
-        // Tắt video intro nếu bấm vào chụp ảnh
-        const intro = document.getElementById('intro-overlay');
-        if (intro) switchTab('vr');
-
-        document.getElementById('ai-menu').classList.toggle('hidden');
-    }
-
-    async function initAI(input) {
-        if (!input.files[0]) return;
-        document.getElementById('loading').style.display = "flex";
-        const formData = new FormData();
-        formData.append("image_file", input.files[0]);
-
-        try {
-            const res = await fetch("https://api.remove.bg/v1.0/removebg", {
-                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData
-            });
-            const blob = await res.blob();
-            const img = new Image();
-            img.onload = () => {
-                userImg = img;
-                const ratio = img.width / img.height;
-                imgPos.h = 500; imgPos.w = 500 * ratio;
-                imgPos.x = (canvas.width - imgPos.w) / 2;
-                imgPos.y = canvas.height - imgPos.h - 50;
-                document.getElementById('loading').style.display = "none";
-                document.getElementById('edit-area').style.display = "block";
-                render();
-            };
-            img.src = URL.createObjectURL(blob);
-        } catch (e) { 
-            alert("Lỗi tách nền!"); 
-            document.getElementById('loading').style.display = "none"; 
-        }
-    }
-
-    function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (userImg) {
-            const s = slider.value;
-            ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
-        }
-    }
-
-    // 4. CHỤP ẢNH XUẤT FILE
-    function startCapture() {
-        const flash = document.getElementById('flash');
-        flash.style.display = 'block';
-        setTimeout(() => flash.style.display = 'none', 150);
-
-        html2canvas(document.body, {
-            useCORS: true, 
-            allowTaint: true,
-            ignoreElements: (el) => {
-                return el.classList.contains('top-btns') || el.classList.contains('controls');
-            }
-        }).then(resultCanvas => {
-            const link = document.createElement('a');
-            link.download = 'NinhThuan_Souvenir.png';
-            link.href = resultCanvas.toDataURL("image/png");
-            link.click();
-        });
-    }
-</script>
-</body>
-</html>
+    <button class="round-btn" onclick="toggleMenu()">☰</button>
+    <button class="round-btn cart" onclick="openShop()">
