@@ -3,211 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Studio Edition</title>
+    <title>Ninh Thuận AI - Tab Navigation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
             --primary: #ff9800; 
             --glass: rgba(255, 255, 255, 0.85);
             --dark: #2c3e50;
+            --success: #27ae60;
         }
         
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
-        iframe { width: 100%; height: 100%; border: none; position: absolute; z-index: 1; }
-        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
-        
-        /* Khung định vị bưu thiếp */
-        #guide-frame {
-            position: absolute; top: 15vh; left: 55vw; width: 320px; height: 450px; border: 2px dashed #fff;
-            box-shadow: 0 0 0 5000px rgba(0,0,0,0.7); z-index: 50; cursor: move; pointer-events: auto; display: none;
-            border-radius: 12px;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #000; }
 
-        /* Nút điều khiển */
-        .top-btns { position: absolute; top: 20px; left: 20px; z-index: 300; display: flex; gap: 12px; }
+        /* --- 1. VIDEO INTRO LAYER --- */
+        #intro-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
+        }
+        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- 2. HỆ THỐNG IFRAME TAB --- */
+        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
+        .pano-page.active { visibility: visible; z-index: 10; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
+
+        /* --- 3. ĐIỀU HƯỚNG --- */
+        .top-btns { position: absolute; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 12px; }
         .round-btn {
             width: 45px; height: 45px; background: var(--primary); color: white;
             border: none; border-radius: 50%; cursor: pointer; font-size: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
             transition: 0.3s;
         }
+        .round-btn.cart { background: var(--success); }
+        .round-btn.active { outline: 3px solid white; transform: scale(1.1); }
 
-        /* Sidebar Panel */
+        /* Giao diện Menu Studio */
         .controls { 
-            position: absolute; top: 75px; left: 20px; z-index: 200; width: 280px; 
+            position: absolute; top: 75px; left: 20px; z-index: 9000; width: 280px; 
             background: var(--glass); backdrop-filter: blur(15px);
             padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
             transition: 0.4s; transform-origin: top left;
         }
         .controls.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
 
-        .label-btn { display: block; padding: 10px; background: var(--primary); color: white; border-radius: 30px; cursor: pointer; text-align: center; font-weight: bold; font-size: 13px; margin-bottom: 10px; }
-        .action-btn { width: 100%; padding: 12px; margin-top: 8px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; font-size: 13px; }
-        .btn-drag { background: #7f8c8d; }
-        .btn-drag.active { background: #e74c3c; }
-        .btn-save { background: #27ae60; font-size: 15px !important; margin-top: 20px !important; }
-
-        #countdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 150px; color: white; font-weight: 900; z-index: 2000; display: none; }
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        /* --- GIAN HÀNG POPUP (Danh sách sản phẩm) --- */
+        #shop-popup {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 90%; max-width: 350px; background: white; z-index: 10001;
+            padding: 20px; border-radius: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transition: 0.4s; opacity: 0;
+        }
+        #shop-popup.active { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; backdrop-filter: blur(3px); }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .loader { width: 40px; height: 40px; border: 4px solid #fff; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .label-btn { display: block; padding: 12px; background: var(--primary); color: white; border-radius: 10px; cursor: pointer; text-align: center; font-weight: bold; margin-bottom: 10px; }
+        .btn-save { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; background: var(--success); }
     </style>
 </head>
 <body>
 
-<div class="top-btns">
-    <button class="round-btn" onclick="toggleMenu()">📷</button>
-</div>
-
-<div id="countdown">3</div>
+<div id="overlay" onclick="closeShop()"></div>
 <div id="loading"><div class="loader"></div><p>AI ĐANG TÁCH NỀN...</p></div>
 
-<div id="wrapper">
-    <iframe id="vr-frame" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-    <canvas id="ui-canvas"></canvas>
-    <div id="guide-frame"></div>
+<div id="intro-overlay">
+    <video id="v-intro" autoplay muted loop playsinline>
+        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
+    </video>
+</div>
 
-    <div class="controls" id="main-menu">
-        <h2 style="text-align: center; margin: 0 0 15px 0; font-size: 18px;">NINH THUẬN AI</h2>
-        <label for="input-file" class="label-btn">📸 Tải ảnh người</label>
-        <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
+<div class="top-btns">
+    <button class="round-btn active" id="btn-vr" onclick="switchTab('vr')">📍</button>
+    <button class="round-btn cart" id="btn-shop" onclick="switchTab('shop')">🛒</button>
+    <button class="round-btn" onclick="toggleAI()">📷</button>
+</div>
 
-        <div id="edit-area" style="display: none;">
-            <select id="frame-style" style="width:100%; padding:10px; border-radius:8px; margin-bottom:10px;">
-                <option value="modern">Trắng hiện đại</option>
-                <option value="vintage">Cổ điển (Sepia)</option>
-                <option value="festival">Lễ hội rực rỡ</option>
-            </select>
-            <input type="text" id="custom-text" value="NINH THUẬN 2025" style="width:100%; padding:10px; border-radius:8px; margin-bottom:10px; box-sizing:border-box;">
-            <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="1.0" style="width:100%;">
-            
-            <button class="action-btn btn-drag" id="drag-btn" onclick="toggleDrag()">🤚 Kéo người: Tắt</button>
-            <button class="action-btn btn-save" onclick="startCapture()">🎁 Xuất bưu thiếp</button>
-        </div>
+<div id="page-vr" class="pano-page active">
+    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+</div>
+<div id="page-shop" class="pano-page">
+    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+</div>
+
+<div class="controls hidden" id="ai-menu">
+    <h2 style="text-align: center; margin: 0 0 15px 0; font-size: 18px;">NINH THUẬN AI</h2>
+    <label for="input-file" class="label-btn">📸 Tải ảnh người</label>
+    <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
+    <div id="edit-area" style="display: none; margin-top:15px;">
+        <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="1.0" style="width:100%;">
+        <button class="btn-save" onclick="startCapture()">🎁 Lưu bưu thiếp</button>
     </div>
 </div>
+
+<canvas id="ui-canvas"></canvas>
 
 <script>
     const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC";
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
-    const guide = document.getElementById('guide-frame');
-    const slider = document.getElementById('size-slider');
-    
-    let userImg = null, imgPos = { x: 0, y: 0, w: 0, h: 0 }, dragActive = false, isDraggingImg = false, isDraggingGuide = false, offset = { x: 0, y: 0 };
+    let userImg = null, imgPos = { x: 0, y: 0, w: 0, h: 0 };
 
-    window.onload = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.onload = () => { 
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight; 
+    };
 
-    function toggleMenu() { document.getElementById('main-menu').classList.toggle('hidden'); }
+    // --- TÍNH NĂNG CHUYỂN TAB (ĐÃ LOẠI BỎ ALERT) ---
+    function switchTab(tab) {
+        killIntro(); // Xóa video ngay khi nhấn
+        
+        // Chuyển trạng thái hiển thị Iframe
+        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('page-' + tab).classList.add('active');
+        document.getElementById('btn-' + tab).classList.add('active');
+        
+        // Nếu là tab shop, có thể thêm logic popup sản phẩm ở đây nếu muốn
+    }
 
+    function killIntro() {
+        const intro = document.getElementById('intro-overlay');
+        if (intro) {
+            document.getElementById('v-intro').pause();
+            intro.remove();
+        }
+    }
+
+    function toggleAI() { 
+        killIntro(); 
+        document.getElementById('ai-menu').classList.toggle('hidden'); 
+    }
+
+    // --- STUDIO AI LOGIC ---
     async function initAI(input) {
         if (!input.files[0]) return;
         document.getElementById('loading').style.display = "flex";
         const formData = new FormData();
         formData.append("image_file", input.files[0]);
         try {
-            const res = await fetch("https://api.remove.bg/v1.0/removebg", { method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData });
+            const res = await fetch("https://api.remove.bg/v1.0/removebg", { 
+                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData 
+            });
             const blob = await res.blob();
             const img = new Image();
             img.onload = () => {
                 userImg = img;
                 const ratio = img.width / img.height;
                 imgPos.h = 450; imgPos.w = 450 * ratio;
-                imgPos.x = window.innerWidth / 2 - imgPos.w / 2;
-                imgPos.y = window.innerHeight / 2 - imgPos.h / 2;
+                imgPos.x = (canvas.width - imgPos.w) / 2;
+                imgPos.y = canvas.height - imgPos.h - 50;
                 document.getElementById('loading').style.display = "none";
-                guide.style.display = "block";
                 document.getElementById('edit-area').style.display = "block";
                 render();
             };
             img.src = URL.createObjectURL(blob);
-        } catch (e) { alert("Lỗi tách nền!"); document.getElementById('loading').style.display = "none"; }
+        } catch (e) { 
+            document.getElementById('loading').style.display = "none"; 
+        }
     }
 
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (userImg) ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * slider.value, imgPos.h * slider.value);
+        const s = document.getElementById('size-slider').value;
+        if (userImg) ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
     }
 
-    // Kéo thả Guide và Nhân vật
-    guide.onmousedown = (e) => { isDraggingGuide = true; offset = { x: e.clientX - guide.offsetLeft, y: e.clientY - guide.offsetTop }; };
-    window.onmousemove = (e) => {
-        if (isDraggingGuide) {
-            const dx = (e.clientX - offset.x) - guide.offsetLeft;
-            const dy = (e.clientY - offset.y) - guide.offsetTop;
-            guide.style.left = (e.clientX - offset.x) + "px";
-            guide.style.top = (e.clientY - offset.y) + "px";
-            imgPos.x += dx; imgPos.y += dy;
-            render();
-        }
-        if (isDraggingImg && dragActive) { imgPos.x = e.clientX - offset.x; imgPos.y = e.clientY - offset.y; render(); }
-    };
-    window.onmouseup = () => { isDraggingGuide = false; isDraggingImg = false; };
-    slider.oninput = render;
-
-    function toggleDrag() { 
-        dragActive = !dragActive; 
-        const btn = document.getElementById('drag-btn');
-        btn.innerHTML = dragActive ? "✅ Đang bật kéo" : "🤚 Kéo người: Tắt"; 
-        btn.classList.toggle('active', dragActive);
-        canvas.style.pointerEvents = dragActive ? "auto" : "none"; 
-    }
-    canvas.onmousedown = (e) => { if(dragActive){ isDraggingImg = true; offset = { x: e.clientX - imgPos.x, y: e.clientY - imgPos.y }; } };
-
-    async function startCapture() {
-        const countEl = document.getElementById('countdown');
-        countEl.style.display = "block";
-        let count = 3;
-        const timer = setInterval(async () => {
-            count--;
-            if (count > 0) countEl.innerText = count;
-            else { clearInterval(timer); countEl.style.display = "none"; await executePerfectCapture(); }
-        }, 1000);
-    }
-
-    async function executePerfectCapture() {
-        document.getElementById('main-menu').classList.add('hidden');
-        guide.style.border = "none";
-        ctx.clearRect(0, 0, canvas.width, canvas.height); 
-
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "browser", width: 3840, height: 2160 }, preferCurrentTab: true });
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        await video.play();
-
-        setTimeout(() => {
-            const outW = 2400, outH = 3200;
-            const f = document.createElement('canvas'); f.width = outW; f.height = outH;
-            const fc = f.getContext('2d');
-            const style = document.getElementById('frame-style').value;
-            const g = guide.getBoundingClientRect();
-            const sx = video.videoWidth / window.innerWidth;
-            const sy = video.videoHeight / window.innerHeight;
-
-            fc.fillStyle = (style === 'vintage') ? "#f4ece0" : (style === 'festival' ? "#fff8e1" : "white");
-            fc.fillRect(0, 0, outW, outH);
-            fc.drawImage(video, g.left * sx, g.top * sy, g.width * sx, g.height * sy, 80, 80, outW - 160, outH - 600);
-            
-            const relX = (imgPos.x - g.left) / g.width;
-            const relY = (imgPos.y - g.top) / g.height;
-            if (style === 'vintage') fc.filter = "sepia(0.3)";
-            fc.drawImage(userImg, 80 + (relX * (outW - 160)), 80 + (relY * (outH - 600)), (imgPos.w * slider.value) * ((outW - 160) / g.width), (imgPos.h * slider.value) * ((outH - 600) / g.height));
-            fc.filter = "none";
-
-            fc.fillStyle = "#2c3e50"; fc.textAlign = "center";
-            fc.font = "bold 110px Arial";
-            fc.fillText(document.getElementById('custom-text').value, outW/2, outH - 280);
-            fc.font = "45px Arial"; fc.fillStyle = "#95a5a6";
-            fc.fillText("Ninh Thuan Digital Passport 2025", outW/2, outH - 180);
-
-            const link = document.createElement('a');
-            link.download = `NinhThuan_Card_${Date.now()}.png`;
-            link.href = f.toDataURL("image/png", 1.0);
-            link.click();
-            
-            stream.getTracks().forEach(t => t.stop());
-            setTimeout(() => location.reload(), 500); 
-        }, 1000);
+    function startCapture() {
+        html2canvas(document.body).then(c => {
+            const a = document.createElement('a');
+            a.download = 'ninh-thuan-tour.png';
+            a.href = c.toDataURL();
+            a.click();
+        });
     }
 </script>
 </body>
