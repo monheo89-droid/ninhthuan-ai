@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Thổ Địa Thông Thái</title>
+    <title>Ninh Thuận AI - Thổ Địa Hết Bận</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
@@ -15,54 +15,37 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #000; }
 
-        /* --- 1. VIDEO INTRO --- */
-        #intro-overlay { 
-            position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
-        }
-        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+        /* Video Intro */
+        #intro-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- 2. HỆ THỐNG IFRAME VR --- */
+        /* Hệ thống Tab */
         .pano-page { position: absolute; inset: 0; visibility: hidden; z-index: 1; }
         .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- 3. ĐIỀU HƯỚNG --- */
+        /* Nút bấm */
         .top-btns { position: absolute; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 12px; }
-        .round-btn {
-            width: 45px; height: 45px; background: var(--primary); color: white;
-            border: none; border-radius: 50%; cursor: pointer; font-size: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
-        }
+        .round-btn { width: 45px; height: 45px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; }
         .round-btn.active { outline: 3px solid white; transform: scale(1.1); }
 
         /* Studio AI Menu */
-        .controls { 
-            position: absolute; top: 75px; left: 20px; z-index: 9000; width: 280px; 
-            background: var(--glass); backdrop-filter: blur(15px);
-            padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            transition: 0.4s; transform-origin: top left;
-        }
+        .controls { position: absolute; top: 75px; left: 20px; z-index: 9000; width: 280px; background: var(--glass); padding: 20px; border-radius: 20px; transition: 0.4s; transform-origin: top left; }
         .controls.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
 
-        /* --- 4. CHATBOT AI (Giao diện chuẩn ảnh của bạn) --- */
+        /* --- GIAO DIỆN CHATBOT XỊN --- */
         #chat-wrapper { position: fixed; bottom: 20px; left: 20px; z-index: 10001; }
-        #chat-box {
-            display: none; width: 320px; height: 450px; background: white;
-            border-radius: 20px; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-            margin-bottom: 15px; overflow: hidden; border: 1px solid #eee;
-        }
-        .chat-header { background: var(--primary); color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        #chat-box { display: none; width: 320px; height: 450px; background: white; border-radius: 20px; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.4); margin-bottom: 15px; overflow: hidden; border: 1px solid #eee; }
+        .chat-header { background: var(--primary); color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; }
         .chat-content { flex: 1; overflow-y: auto; padding: 15px; background: #fdfdfd; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
-        .chat-footer { display: flex; padding: 10px; border-top: 1px solid #eee; background: white; }
-        .chat-footer input { flex: 1; border: none; outline: none; padding: 8px; font-size: 14px; }
-        
-        .msg { padding: 10px 14px; border-radius: 15px; max-width: 85%; line-height: 1.5; word-wrap: break-word; }
+        .chat-footer { display: flex; padding: 10px; border-top: 1px solid #eee; }
+        .chat-footer input { flex: 1; border: none; outline: none; padding: 8px; }
+        .msg { padding: 10px 14px; border-radius: 15px; max-width: 85%; line-height: 1.5; }
         .bot { background: #f0f0f0; align-self: flex-start; color: #333; }
         .user { background: var(--primary); color: white; align-self: flex-end; }
 
-        #ui-canvas { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
         #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #ui-canvas { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -70,9 +53,7 @@
 <div id="loading"><div style="width:40px; height:40px; border:4px solid #fff; border-top:4px solid var(--primary); border-radius:50%; animation:spin 1s linear infinite;"></div><p>AI ĐANG TÁCH NỀN...</p></div>
 
 <div id="intro-overlay" onclick="killIntro()">
-    <video id="v-intro" autoplay muted loop playsinline>
-        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
-    </video>
+    <video id="v-intro" autoplay muted loop playsinline><source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4"></video>
 </div>
 
 <div class="top-btns">
@@ -85,7 +66,7 @@
 <div id="page-shop" class="pano-page"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe></div>
 
 <div class="controls hidden" id="ai-menu">
-    <h3 style="text-align: center; margin-bottom: 15px;">NINH THUẬN STUDIO</h3>
+    <h3 style="text-align: center; margin: 0 0 15px 0;">NINH THUẬN STUDIO</h3>
     <label for="input-file" style="display:block; padding:12px; background:var(--primary); color:white; border-radius:10px; cursor:pointer; text-align:center;">Tải ảnh chân dung</label>
     <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
     <div id="edit-area" style="display: none; margin-top:15px;">
@@ -96,12 +77,9 @@
 
 <div id="chat-wrapper">
     <div id="chat-box">
-        <div class="chat-header">
-            <span>Thổ địa Ninh Thuận AI</span>
-            <span onclick="toggleChat()" style="cursor:pointer; font-size:24px;">&times;</span>
-        </div>
+        <div class="chat-header"><span>Thổ địa Ninh Thuận AI</span><span onclick="toggleChat()" style="cursor:pointer; font-size:24px;">&times;</span></div>
         <div class="chat-content" id="chat-display">
-            <div class="msg bot">Chào bạn! Thổ địa Ninh Thuận đây. Cần hỏi gì cứ nhắn tui nhé!</div>
+            <div class="msg bot">Chào bạn! Thổ địa Ninh Thuận đây. Bạn muốn đi đâu, ăn gì cứ hỏi nhé!</div>
         </div>
         <div class="chat-footer">
             <input type="text" id="chat-input" placeholder="Hỏi thổ địa..." onkeypress="if(event.key==='Enter') sendAI()">
@@ -128,6 +106,7 @@
     function toggleAI() { killIntro(); document.getElementById('ai-menu').classList.toggle('hidden'); }
     function toggleChat() { killIntro(); const box = document.getElementById('chat-box'); box.style.display = (box.style.display === 'flex') ? 'none' : 'flex'; }
 
+    // --- LỆNH GỬI TIN NHẮN (ĐÃ FIX ĐỂ HẾT BẬN) ---
     async function sendAI() {
         const input = document.getElementById('chat-input');
         const display = document.getElementById('chat-display');
@@ -143,18 +122,20 @@
         try {
             const res = await fetch(PROXY_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json" }, // Bắt buộc phải có dòng này
                 body: JSON.stringify({ message: text })
             });
             const data = await res.json();
-            document.getElementById(tempId).innerText = data.reply;
+            // Cập nhật câu trả lời từ Worker
+            document.getElementById(tempId).innerText = data.reply || "Thổ địa không nghe rõ, bạn nói lại nhé!";
         } catch (e) {
-            document.getElementById(tempId).innerText = "Thổ địa đang bận, bạn thử lại sau nhé!";
+            document.getElementById(tempId).innerText = "Lỗi kết nối. Bạn kiểm tra lại Cloudflare Worker nhé!";
         }
         display.scrollTop = display.scrollHeight;
     }
 
-    async function initAI(input) { // Logic từ tab+ng.py
+    // Studio AI Logic
+    async function initAI(input) {
         if (!input.files[0]) return;
         document.getElementById('loading').style.display = "flex";
         const formData = new FormData();
@@ -166,8 +147,7 @@
             img.onload = () => {
                 userImg = img;
                 imgPos.h = 450; imgPos.w = 450 * (img.width/img.height);
-                imgPos.x = (canvas.width - imgPos.w) / 2;
-                imgPos.y = canvas.height - imgPos.h - 50;
+                imgPos.x = (canvas.width - imgPos.w) / 2; imgPos.y = canvas.height - imgPos.h - 50;
                 document.getElementById('loading').style.display = "none";
                 document.getElementById('edit-area').style.display = "block";
                 render();
