@@ -2,115 +2,194 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Smooth Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ninh Thuận AI - Multi Device</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --primary: #ff9800; --success: #27ae60; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-        
-        /* Iframe tối ưu hóa */
-        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+        :root { --primary: #ff9800; --success: #27ae60; --glass: rgba(255,255,255,0.9); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; }
+
+        /* IFRAME MANAGEMENT */
+        .pano-page { position: absolute; inset: 0; display: none; z-index: 1; }
         .pano-page.active { display: block; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* UI tối giản để nhẹ máy */
-        .top-btns { position: absolute; top: 15px; left: 15px; z-index: 1000; display: flex; gap: 10px; }
-        .btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--primary); color: white; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        /* STUDIO CANVAS */
+        #ui-canvas { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
+        #guide-box { 
+            position: absolute; top: 20%; left: 50%; width: 300px; height: 400px; 
+            border: 2px dashed #fff; transform: translateX(-50%); display: none;
+            z-index: 50; pointer-events: auto; box-shadow: 0 0 0 5000px rgba(0,0,0,0.5);
+        }
+
+        /* UI CONTROLS */
+        .top-nav { position: absolute; top: 15px; left: 15px; z-index: 1000; display: flex; gap: 10px; }
+        .btn-round { 
+            width: 48px; height: 48px; border-radius: 50%; border: none; 
+            background: var(--primary); color: white; font-size: 20px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;
+        }
+
+        .side-panel { 
+            position: absolute; bottom: 20px; left: 15px; width: calc(100% - 30px); max-width: 320px;
+            background: var(--glass); padding: 15px; border-radius: 20px; z-index: 1100;
+            display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* SMART HOTSPOT */
+        .hotspot { 
+            position: absolute; width: 24px; height: 24px; background: var(--primary);
+            border: 3px solid white; border-radius: 50%; z-index: 200;
+            pointer-events: auto; display: none;
+        }
+
+        /* INFO CARD */
+        #info-card {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            width: 85%; max-width: 300px; background: white; border-radius: 25px;
+            display: none; z-index: 2000; overflow: hidden; transition: 0.3s;
+        }
+        #info-card.active { display: block; transform: translate(-50%, -50%) scale(1); }
+
+        /* LOADING */
+        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; display: none; color: white; flex-direction: column; justify-content: center; align-items: center; }
         
-        /* Canvas layer */
-        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
-        
-        /* Loading nhẹ */
-        #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; color: white; justify-content: center; align-items: center; z-index: 9999; }
-        
-        /* Hotspot đơn giản */
-        .hotspot { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; border: 2px solid white; cursor: pointer; pointer-events: auto; z-index: 200; }
+        @media (min-width: 768px) {
+            .side-panel { top: 80px; left: 15px; bottom: auto; }
+        }
     </style>
 </head>
 <body>
 
-<div id="loading">ĐANG XỬ LÝ...</div>
+<div id="loader"><p>ĐANG XỬ LÝ...</p></div>
 
-<div class="top-btns">
-    <button class="btn" onclick="switchTab('vr')">📍</button>
-    <button class="btn" onclick="switchTab('shop')" style="background:var(--success)">🛒</button>
-    <button class="btn" onclick="toggleAI()">📷</button>
+<div class="top-nav">
+    <button class="btn-round" onclick="switchTab('vr')">📍</button>
+    <button class="btn-round" onclick="switchTab('shop')" style="background:var(--success)">🛒</button>
+    <button class="btn-round" onclick="openStudio()">📷</button>
 </div>
 
 <div id="page-vr" class="pano-page active">
     <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
 </div>
+
 <div id="page-shop" class="pano-page">
     <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+    <div class="hotspot" style="top: 55%; left: 48%;" onclick="showInfo()"></div>
+</div>
+
+<div id="info-card">
+    <img src="https://vcdn1-dulich.vnecdn.net/2022/05/18/nho-ninh-thuan-1-1652844111.jpg" style="width:100%">
+    <div style="padding:15px">
+        <h3>Nho Tím Ninh Thuận</h3>
+        <p style="font-size:14px; color:#666">Đặc sản trứ danh vùng nắng gió.</p>
+        <button onclick="this.parentElement.parentElement.classList.remove('active')" style="width:100%; padding:10px; border-radius:10px; border:none; background:#eee">Đóng</button>
+    </div>
+</div>
+
+<div class="side-panel" id="studio-ui">
+    <h3 style="margin-top:0">Studio AI</h3>
+    <input type="file" id="file-in" hidden onchange="handleImg(this)">
+    <button onclick="document.getElementById('file-in').click()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold">CHỌN ẢNH NGƯỜI</button>
+    
+    <div id="tools" style="display:none; margin-top:15px">
+        <label>Kích thước:</label>
+        <input type="range" id="size" min="0.2" max="2" step="0.1" value="1" style="width:100%" oninput="render()">
+        <button onclick="takeSnap()" style="width:100%; margin-top:15px; padding:12px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold">XUẤT BƯU THIẾP</button>
+    </div>
 </div>
 
 <canvas id="ui-canvas"></canvas>
+<div id="guide-box"></div>
 
 <script>
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
-    let userImg = null;
+    let userImg = null, imgX = 100, imgY = 100;
 
-    // Fix lỗi đơ: Chỉ resize canvas khi thực sự cần
+    function switchTab(tab) {
+        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + tab).classList.add('active');
+        document.querySelectorAll('.hotspot').forEach(h => h.style.display = (tab === 'shop' ? 'block' : 'none'));
+        document.getElementById('studio-ui').style.display = 'none';
+        document.getElementById('guide-box').style.display = 'none';
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+
+    function openStudio() {
+        document.getElementById('studio-ui').style.display = 'block';
+        document.getElementById('guide-box').style.display = 'block';
+        resize();
+    }
+
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         render();
     }
     window.addEventListener('resize', resize);
-    resize();
 
-    function switchTab(tab) {
-        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-' + tab).classList.add('active');
-        // Giải phóng canvas khi chuyển tab để máy mượt hơn
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function toggleAI() {
-        // Thay vì hiện menu phức tạp, chỉ kích hoạt input file để tiết kiệm RAM
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (e) => processImage(e.target.files[0]);
-        input.click();
-    }
-
-    async function processImage(file) {
-        if (!file) return;
-        document.getElementById('loading').style.display = 'flex';
-        
-        // Giả lập tách nền để tránh treo máy nếu API chậm
+    function handleImg(input) {
+        if (!input.files[0]) return;
+        document.getElementById('loader').style.display = 'flex';
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
                 userImg = img;
+                document.getElementById('tools').style.display = 'block';
+                document.getElementById('loader').style.display = 'none';
                 render();
-                document.getElementById('loading').style.display = 'none';
             };
-            img.src = event.target.result;
+            img.src = e.target.result;
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(input.files[0]);
     }
 
     function render() {
-        if (!userImg) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Vẽ ảnh ở góc màn hình để tránh che khuất Tour
-        ctx.drawImage(userImg, 20, canvas.height - 220, 150, 200);
-    }
-
-    // Cơ chế chụp ảnh an toàn: Dùng MediaDevices thay vì html2canvas
-    async function safeCapture() {
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            // Xử lý stream ở đây...
-            stream.getTracks().forEach(t => t.stop());
-        } catch (err) {
-            console.log("Người dùng hủy chụp");
+        if (userImg) {
+            const s = document.getElementById('size').value;
+            ctx.drawImage(userImg, imgX, imgY, userImg.width*0.2*s, userImg.height*0.2*s);
         }
     }
+
+    // Kéo thả cảm ứng & chuột
+    let dragging = false;
+    const start = (e) => { dragging = true; canvas.style.pointerEvents = 'auto'; };
+    const move = (e) => {
+        if (!dragging) return;
+        const pos = e.touches ? e.touches[0] : e;
+        imgX = pos.clientX - 50; imgY = pos.clientY - 50;
+        render();
+    };
+    const end = () => dragging = false;
+
+    canvas.addEventListener('mousedown', start);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start);
+    window.addEventListener('touchmove', move);
+    window.addEventListener('touchend', end);
+
+    function showInfo() { document.getElementById('info-card').classList.add('active'); }
+
+    async function takeSnap() {
+        document.getElementById('loader').style.display = 'flex';
+        // Tối ưu: Chỉ chụp canvas và UI để không làm treo bộ nhớ Iframe
+        html2canvas(document.body, { 
+            ignoreElements: (el) => el.tagName === 'IFRAME',
+            useCORS: true 
+        }).then(c => {
+            const link = document.createElement('a');
+            link.download = 'NinhThuan_Studio.png';
+            link.href = c.toDataURL();
+            link.click();
+            document.getElementById('loader').style.display = 'none';
+        });
+    }
+    
+    resize();
 </script>
 </body>
 </html>
