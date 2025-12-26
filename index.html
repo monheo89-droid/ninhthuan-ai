@@ -3,106 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Sàn Thương Mại Số 360</title>
+    <title>Ninh Thuận AI - Gian Hàng Số Nâng Cấp</title>
     <style>
-        :root { 
-            --shopee: #ee4d2d;
-            --primary: #ff9800; 
-        }
-        
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
+        :root { --shopee: #ee4d2d; --accent: #ff9800; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
 
-        /* LỚP 1: TOUR PANOEE */
-        #pano-frame {
+        /* LỚP 1: PANOEE GỐC (GIỮ NGUYÊN) */
+        #main-tour {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             border: none; z-index: 1;
         }
 
-        /* LỚP 2: NÚT GIỎ HÀNG NỔI */
-        .cart-float-btn {
-            position: fixed; bottom: 30px; right: 30px; z-index: 100;
-            width: 60px; height: 60px; background: var(--shopee); color: white;
-            border: none; border-radius: 50%; cursor: pointer; font-size: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
-        }
-        .cart-float-btn:hover { transform: scale(1.1); }
-
-        /* LỚP 3: GIAO DIỆN CỬA HÀNG (SIDEBAR) */
-        #shop-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            z-index: 1000; display: none; backdrop-filter: blur(3px);
-        }
-        #shop-sidebar {
-            position: absolute; right: 0; top: 0; width: 100%; max-width: 380px; height: 100%;
-            background: #f4f4f4; box-shadow: -5px 0 15px rgba(0,0,0,0.3);
-            display: flex; flex-direction: column; transition: 0.3s;
+        /* LỚP 2: NÚT GIỎ HÀNG NỔI (TÍNH NĂNG THÊM) */
+        .shop-trigger {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            width: 50px; height: 50px; background: var(--shopee); color: white;
+            border: none; border-radius: 50%; cursor: pointer; font-size: 22px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
         }
 
-        .shop-header { background: var(--shopee); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .shop-list { flex: 1; overflow-y: auto; padding: 15px; }
+        /* LỚP 3: CỬA SỔ GIAN HÀNG (CHỈ HIỆN KHI CẦN) */
+        #shop-panel {
+            position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100%;
+            background: #fff; z-index: 1000; transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: -5px 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+        }
+        #shop-panel.open { right: 0; }
         
-        /* THẺ SẢN PHẨM */
-        .product-item {
-            background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px;
-            display: flex; gap: 12px; align-items: center; border: 2px solid transparent;
+        .header { background: var(--shopee); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .product-list { flex: 1; overflow-y: auto; padding: 15px; background: #f8f8f8; }
+        
+        /* CARD SẢN PHẨM */
+        .item {
+            background: #fff; border-radius: 10px; padding: 12px; margin-bottom: 15px;
+            display: flex; gap: 15px; align-items: center; border: 2px solid transparent;
         }
-        .product-item.active-focus { border-color: var(--shopee); background: #fff5f2; }
-        .product-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; }
-        .product-info { flex: 1; }
-        .product-info h4 { margin: 0 0 5px 0; font-size: 15px; color: #333; }
-        .product-price { color: var(--shopee); font-weight: bold; font-size: 16px; }
-        .btn-order { 
-            background: var(--shopee); color: white; border: none; padding: 8px 12px; 
-            border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 8px; width: 100%;
+        .item.focus { border-color: var(--shopee); background: #fff5f2; }
+        .item img { width: 85px; height: 85px; object-fit: cover; border-radius: 8px; }
+        .item-info { flex: 1; }
+        .item-info h4 { margin: 0 0 5px 0; font-size: 15px; }
+        .price { color: var(--shopee); font-weight: bold; font-size: 17px; }
+        .buy-now { 
+            background: var(--shopee); color: white; border: none; padding: 8px; 
+            border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold;
         }
 
-        #loader { text-align: center; margin-top: 50px; color: #888; }
+        #overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; display: none;
+        }
     </style>
 </head>
 <body>
 
-    <iframe id="pano-frame" src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+    <iframe id="main-tour" src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
 
-    <button class="cart-float-btn" onclick="openShop()">🛒</button>
+    <button class="shop-trigger" onclick="toggleShop()">🛒</button>
 
-    <div id="shop-overlay" onclick="closeShop(event)">
-        <div id="shop-sidebar" onclick="event.stopPropagation()">
-            <div class="shop-header">
-                <h3 style="margin:0">Gian Hàng Ninh Thuận</h3>
-                <span style="cursor:pointer; font-size:30px;" onclick="closeShopDirect()">&times;</span>
-            </div>
-            <div class="shop-list" id="shop-content">
-                <div id="loader">Đang kết nối kho hàng...</div>
-            </div>
+    <div id="overlay" onclick="toggleShop()"></div>
+
+    <div id="shop-panel">
+        <div class="header">
+            <h3 style="margin:0">Gian Hàng Đặc Sản</h3>
+            <button onclick="toggleShop()" style="background:none; border:none; color:white; font-size:30px; cursor:pointer;">&times;</button>
+        </div>
+        <div class="product-list" id="list-container">
+            <p style="text-align:center; padding-top:50px; color:#888;">Đang kết nối dữ liệu...</p>
         </div>
     </div>
 
     <script>
-        // Cấu hình
-        const API_URL = "https://script.google.com/macros/s/AKfycbyD5o6YcsMgL1Qw-tupdqER9EuwnZrCY1qEkWn30MWbmaqe1xFGjrKSE8bkIlkFZkpV/exec";
-        const MY_ZALO = "0909559101"; // Số điện thoại của bạn
+        const API = "https://script.google.com/macros/s/AKfycbyD5o6YcsMgL1Qw-tupdqER9EuwnZrCY1qEkWn30MWbmaqe1xFGjrKSE8bkIlkFZkpV/exec";
+        const PHONE = "0909559101";
 
-        // Nhận lệnh từ Panoee Hotspot
-        window.openShopFromTour = function(id) {
-            openShop(id);
+        // LẮNG NGHE LỆNH TỪ PANOEE (KHÔNG CAN THIỆP PANOEE)
+        // Trong Panoee, bạn chỉ cần đặt Hotspot URL là: javascript:window.parent.openFromTour('ID')
+        window.openFromTour = function(id) {
+            toggleShop(true, id);
         };
 
-        async function openShop(focusId = null) {
-            document.getElementById('shop-overlay').style.display = 'block';
-            const listArea = document.getElementById('shop-content');
-            
+        async function toggleShop(show = null, focusId = null) {
+            const panel = document.getElementById('shop-panel');
+            const overlay = document.getElementById('overlay');
+            const isOpening = show !== null ? show : !panel.classList.contains('open');
+
+            if (isOpening) {
+                panel.classList.add('open');
+                overlay.style.display = 'block';
+                await loadProducts(focusId);
+            } else {
+                panel.classList.remove('open');
+                overlay.style.display = 'none';
+            }
+        }
+
+        async function loadProducts(focusId) {
+            const container = document.getElementById('list-container');
             try {
-                const res = await fetch(API_URL);
+                const res = await fetch(API);
                 const data = await res.json();
                 
-                listArea.innerHTML = ""; // Xóa chữ loading
-                
-                data.forEach(item => {
-                    const isFocus = (focusId && item.id == focusId);
-                    listArea.innerHTML += `
-                        <div class="product-item ${isFocus ? 'active-focus' : ''}" id="item-${item.id}">
-                            <img src="${item.image}" alt="${item.name}">
-                            <div class="product-info">
-                                <h4>${item.name}</h4>
-                                <div class="
+                container.innerHTML = data.map(p => `
+                    <div class="item ${focusId == p.id ? 'focus' : ''}" id="p-${p.id}">
+                        <img src="${p.image}" onerror="this.src='https://via.placeholder.com/80'">
+                        <div class="item-info">
+                            <h4>${p.name}</h4>
+                            <div class="price">${Number(p.price).toLocaleString()}đ</div>
+                            <button class="buy-now" onclick="toZalo('${p.name}')">ĐẶT MUA</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                if (focusId) {
+                    setTimeout(() => {
+                        document.getElementById('p-' + focusId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                }
+            } catch (e) {
+                container.innerHTML = "Không thể tải dữ liệu.";
+            }
+        }
+
+        function toZalo(name) {
+            const msg = encodeURIComponent(`Chào bạn, mình muốn mua: ${name}`);
+            window.open(`https://zalo.me/${PHONE}?text=${msg}`, '_blank');
+        }
+    </script>
+</body>
+</html>
