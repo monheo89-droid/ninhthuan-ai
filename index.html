@@ -2,157 +2,152 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI - Fix Drag</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninh Thuận AI - Smart Ecommerce</title>
     <style>
-        :root { --primary: #ff9800; --success: #27ae60; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
+        :root { 
+            --primary: #ff9800; 
+            --success: #27ae60;
+            --shopee: #ee4d2d;
+            --glass: rgba(255, 255, 255, 0.95);
+        }
         
-        /* Iframe */
-        .pano-page { position: absolute; inset: 0; display: none; z-index: 1; }
-        .pano-page.active { display: block; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
+
+        /* --- IFRAME LAYERS --- */
+        .pano-page { position: absolute; inset: 0; visibility: hidden; z-index: 1; }
+        .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Canvas - Quan trọng: pointer-events auto để bắt được sự kiện kéo */
-        #ui-canvas { 
-            position: absolute; inset: 0; z-index: 100; 
-            pointer-events: none; /* Mặc định tắt để xoay Tour */
+        /* --- NAVIGATION --- */
+        .top-btns { position: absolute; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 12px; }
+        .round-btn {
+            width: 50px; height: 50px; background: var(--primary); color: white;
+            border: none; border-radius: 50%; cursor: pointer; font-size: 22px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
         }
-        #ui-canvas.active { pointer-events: auto; cursor: move; }
+        .round-btn.cart-btn { background: var(--shopee); }
+        .round-btn.active { outline: 3px solid white; transform: scale(1.1); }
 
-        /* UI */
-        .top-nav { position: absolute; top: 15px; left: 15px; z-index: 1000; display: flex; gap: 10px; }
-        .btn { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--primary); color: white; cursor: pointer; font-size: 20px; }
-        
-        .panel { 
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 350px; background: rgba(255,255,255,0.9);
-            padding: 15px; border-radius: 15px; z-index: 1100; display: none; text-align: center;
+        /* --- SMART SHOP POPUP --- */
+        #shop-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
+            z-index: 10001; display: none; backdrop-filter: blur(5px); 
+        }
+        #shop-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90%; max-width: 400px; background: #f5f5f5; border-radius: 20px;
+            overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .shop-header { background: var(--shopee); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .shop-content { padding: 15px; max-height: 450px; overflow-y: auto; }
+
+        /* PRODUCT CARD STYLE */
+        .product-card {
+            background: white; border-radius: 12px; display: flex; gap: 12px;
+            padding: 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .product-card img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; background: #eee; }
+        .product-info { flex: 1; }
+        .product-info h4 { margin: 0 0 5px 0; font-size: 15px; }
+        .product-info .price { color: var(--shopee); font-weight: bold; font-size: 16px; margin-bottom: 8px; }
+        .buy-btn { 
+            background: var(--shopee); color: white; border: none; 
+            padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
+            text-decoration: none; display: inline-block;
         }
 
-        #guide-text {
-            position: absolute; top: 80px; width: 100%; text-align: center;
-            color: white; font-weight: bold; text-shadow: 2px 2px 4px #000; z-index: 1000; display: none;
-        }
+        /* LOADING INDICATOR */
+        #shop-loader { text-align: center; padding: 20px; display: none; }
+        .spinner { width: 30px; height: 30px; border: 3px solid #ddd; border-top-color: var(--shopee); border-radius: 50%; animation: spin 0.8s linear infinite; margin: auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="guide-text">DÙNG TAY KÉO NGƯỜI ĐỂ DI CHUYỂN</div>
-
-<div class="top-nav">
-    <button class="btn" onclick="switchTab('vr')">📍</button>
-    <button class="btn" onclick="switchTab('shop')" style="background:var(--success)">🛒</button>
-    <button class="btn" onclick="toggleStudio()">📷</button>
+<div class="top-btns">
+    <button class="round-btn active" id="btn-vr" onclick="switchTab('vr')">📍</button>
+    <button class="round-btn cart-btn" id="btn-shop" onclick="openShop()">🛒</button>
 </div>
 
-<div id="page-vr" class="pano-page active"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe></div>
-<div id="page-shop" class="pano-page"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe></div>
+<div id="page-vr" class="pano-page active">
+    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+</div>
 
-<canvas id="ui-canvas"></canvas>
+<div id="shop-overlay" onclick="closeShop(event)">
+    <div id="shop-container">
+        <div class="shop-header">
+            <h3 style="margin:0">Đặc Sản Ninh Thuận</h3>
+            <span style="cursor:pointer; font-size: 24px;" onclick="document.getElementById('shop-overlay').style.display='none'">&times;</span>
+        </div>
+        
+        <div id="shop-loader">
+            <div class="spinner"></div>
+            <p style="color:#666; font-size:13px; margin-top:10px;">Đang tải dữ liệu từ Sheets...</p>
+        </div>
 
-<div class="panel" id="studio-panel">
-    <input type="file" id="inp" hidden onchange="loadImage(this)">
-    <button onclick="document.getElementById('inp').click()" style="width:100%; padding:10px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:bold;">TẢI ẢNH NGƯỜI</button>
-    <div id="ctrl" style="display:none; margin-top:10px;">
-        <input type="range" id="sc" min="0.1" max="2" step="0.05" value="0.6" style="width:100%" oninput="draw()">
-        <p style="font-size:12px; margin:5px 0;">Kéo trực tiếp lên người để di chuyển</p>
+        <div class="shop-content" id="product-list">
+            </div>
     </div>
 </div>
 
 <script>
-    const cvs = document.getElementById('ui-canvas');
-    const ctx = cvs.getContext('2d');
-    let img = null, x = 100, y = 100, scale = 0.6, isDrag = false;
+    // ĐƯỜNG LINK API CỦA BẠN
+    const SHEET_API = "https://script.google.com/macros/s/AKfycbyD5o6YcsMgL1Qw-tupdqER9EuwnZrCY1qEkWn30MWbmaqe1xFGjrKSE8bkIlkFZkpV/exec";
 
-    function resize() {
-        cvs.width = window.innerWidth;
-        cvs.height = window.innerHeight;
-        draw();
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    function toggleStudio() {
-        const panel = document.getElementById('studio-panel');
-        const isOpening = panel.style.display !== 'block';
-        panel.style.display = isOpening ? 'block' : 'none';
-        document.getElementById('guide-text').style.display = isOpening ? 'block' : 'none';
-        cvs.classList.toggle('active', isOpening); // Bật/tắt khả năng bắt sự kiện của canvas
-    }
-
-    function switchTab(t) {
+    function switchTab(tab) {
         document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-' + t).classList.add('active');
-        cvs.classList.remove('active');
-        document.getElementById('studio-panel').style.display = 'none';
+        document.getElementById('page-' + tab).classList.add('active');
+        document.getElementById('btn-vr').classList.toggle('active', tab === 'vr');
     }
 
-    function loadImage(input) {
-        if (!input.files[0]) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const newImg = new Image();
-            newImg.onload = () => {
-                img = newImg;
-                x = cvs.width/2 - (img.width*scale)/2;
-                y = cvs.height/2 - (img.height*scale)/2;
-                document.getElementById('ctrl').style.display = 'block';
-                draw();
-            };
-            newImg.src = e.target.result;
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
+    async function openShop() {
+        document.getElementById('shop-overlay').style.display = 'block';
+        const listContainer = document.getElementById('product-list');
+        const loader = document.getElementById('shop-loader');
+        
+        // Hiện hiệu ứng tải
+        listContainer.innerHTML = "";
+        loader.style.display = 'block';
 
-    function draw() {
-        ctx.clearRect(0, 0, cvs.width, cvs.height);
-        if (img) {
-            scale = document.getElementById('sc').value;
-            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        try {
+            const response = await fetch(SHEET_API);
+            const products = await response.json();
+            
+            loader.style.display = 'none';
+            
+            if (products.length === 0) {
+                listContainer.innerHTML = "<p style='text-align:center; color:#999;'>Chưa có sản phẩm nào.</p>";
+                return;
+            }
+
+            // Đổ dữ liệu vào giao diện
+            products.forEach(p => {
+                const priceFormatted = Number(p.price).toLocaleString('vi-VN');
+                listContainer.innerHTML += `
+                    <div class="product-card">
+                        <img src="${p.image || 'https://via.placeholder.com/80'}" alt="${p.name}">
+                        <div class="product-info">
+                            <h4>${p.name}</h4>
+                            <div class="price">${priceFormatted}đ</div>
+                            <a href="https://zalo.me/0900000000?text=Tôi muốn mua: ${p.name}" target="_blank" class="buy-btn">Mua ngay</a>
+                        </div>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            loader.style.display = 'none';
+            listContainer.innerHTML = "<p style='text-align:center; color:red;'>Lỗi kết nối dữ liệu!</p>";
+            console.error(error);
         }
     }
 
-    // --- LOGIC KÉO THẢ ĐA ĐIỂM (MOUSE + TOUCH) ---
-    function getPos(e) {
-        const rect = cvs.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    }
-
-    function onStart(e) {
-        if (!img) return;
-        const pos = getPos(e);
-        // Kiểm tra xem có nhấn trúng vào vùng ảnh không
-        if (pos.x >= x && pos.x <= x + img.width * scale &&
-            pos.y >= y && pos.y <= y + img.height * scale) {
-            isDrag = true;
-            e.preventDefault();
+    function closeShop(e) {
+        if (e.target.id === 'shop-overlay') {
+            document.getElementById('shop-overlay').style.display = 'none';
         }
     }
-
-    function onMove(e) {
-        if (!isDrag) return;
-        const pos = getPos(e);
-        x = pos.x - (img.width * scale) / 2;
-        y = pos.y - (img.height * scale) / 2;
-        draw();
-        e.preventDefault();
-    }
-
-    function onEnd() { isDrag = false; }
-
-    // Sự kiện Chuột
-    cvs.addEventListener('mousedown', onStart);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onEnd);
-
-    // Sự kiện Cảm ứng (Điện thoại)
-    cvs.addEventListener('touchstart', onStart, {passive: false});
-    cvs.addEventListener('touchmove', onMove, {passive: false});
-    cvs.addEventListener('touchend', onEnd);
-
 </script>
 </body>
 </html>
