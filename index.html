@@ -3,208 +3,436 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI Studio - Fix Lỗi Bộ Nhớ</title>
-    
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#ff9800">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-
-    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.0.4/dist/imgly-background-removal.min.js"></script>
-
+    <title>Ninh Thuận AI Tour - Studio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --primary: #ff9800; --glass: rgba(0, 0, 0, 0.85); }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        :root { 
+            --primary: #ff9800; 
+            --glass: rgba(20, 20, 20, 0.85); /* Đổi sang màu tối cho sang trọng */
+            --text-light: #ffffff;
+            --success: #27ae60;
+            --danger: #e74c3c;
+        }
+        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #000; touch-action: none; /* Chặn cuộn trang khi kéo thả */ }
 
-        /* Video Intro */
-        #intro-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100000; display: flex; align-items: center; justify-content: center; }
-        #intro-overlay video { position: absolute; width: 100%; height: 100%; object-fit: cover; }
-        #btn-close-intro { position: absolute; bottom: 80px; padding: 12px 30px; background: rgba(255,255,255,0.2); border: 2px solid white; color: white; border-radius: 50px; cursor: pointer; z-index: 100001; font-weight: bold; }
+        /* --- 1. VIDEO INTRO --- */
+        #intro-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
+            transition: opacity 0.5s;
+        }
+        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
+        .skip-btn {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            padding: 10px 25px; border: 1px solid white; color: white; background: rgba(0,0,0,0.5);
+            border-radius: 20px; cursor: pointer; z-index: 10000;
+        }
 
-        /* Màn hình Loading xử lý AI */
+        /* --- 2. HỆ THỐNG VIEW --- */
+        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
+        .pano-page.active { visibility: visible; z-index: 5; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* Canvas đè lên trên iframe để vẽ nhân vật */
+        #ui-canvas { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 50; touch-action: none; cursor: grab;
+        }
+        #ui-canvas:active { cursor: grabbing; }
+
+        /* --- 3. GIAO DIỆN ĐIỀU KHIỂN --- */
+        .top-bar {
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            z-index: 100; display: flex; justify-content: space-between; pointer-events: none;
+        }
+        .nav-group { pointer-events: auto; display: flex; gap: 10px; }
+
+        .round-btn {
+            width: 45px; height: 45px; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);
+            color: white; border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%; cursor: pointer; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .round-btn.active { background: var(--primary); border-color: var(--primary); transform: scale(1.1); }
+        .round-btn:active { transform: scale(0.95); }
+
+        /* MENU AI STUDIO */
+        .ai-controls { 
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; z-index: 200;
+            background: var(--glass); backdrop-filter: blur(15px);
+            padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            color: white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .ai-controls.hidden { transform: translate(-50%, 150%); opacity: 0; pointer-events: none; }
+
+        .control-row { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-action { 
+            flex: 1; padding: 12px; border: none; border-radius: 12px; 
+            font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 14px; transition: 0.2s;
+        }
+        .btn-upload { background: #3498db; color: white; }
+        .btn-save { background: var(--success); color: white; }
+        .btn-bg { background: var(--primary); color: white; }
+
+        /* --- LOADING & NOTIFICATIONS --- */
         #loading { 
             position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.9); z-index: 300000; 
+            background: rgba(0,0,0,0.85); z-index: 20000; 
             display: none; flex-direction: column; align-items: center; justify-content: center; color: white; 
         }
-        .loader { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s infinite linear; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* Background VR & Canvas */
-        #vr-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; border: none; }
-        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; touch-action: none; pointer-events: none; }
-        .canvas-active { pointer-events: auto !important; }
-
-        /* Menu điều khiển */
-        .ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
-        .interactive { pointer-events: auto; }
-        .top-bar { position: absolute; top: 15px; left: 15px; display: flex; gap: 10px; }
-        .btn-round { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-
-        .controls { 
-            position: absolute; top: 75px; left: 15px; width: 280px; 
-            background: var(--glass); padding: 20px; border-radius: 15px; color: white; 
-            display: none; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); 
+        
+        .toast {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px;
+            z-index: 30000; opacity: 0; transition: 0.3s; pointer-events: none; font-size: 14px;
         }
-        .controls.show { display: block; }
-        .btn-full { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 15px; cursor: pointer; }
 
-        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #27ae60; color: white; padding: 10px 20px; border-radius: 20px; display: none; z-index: 400000; }
+        /* Hướng dẫn thao tác */
+        .tutorial-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; color: white; text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); opacity: 0; transition: 0.5s;
+        }
+        .hand-icon { font-size: 40px; animation: wave 2s infinite; display: block; margin-bottom: 10px;}
+        @keyframes wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(20px); } }
+
     </style>
 </head>
 <body>
 
-<div id="intro-overlay">
-    <video id="v-intro" autoplay muted loop playsinline src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4"></video>
-    <button id="btn-close-intro" onclick="closeIntro()">VÀO STUDIO</button>
-</div>
-
 <div id="loading">
-    <div class="loader"></div>
-    <p style="margin-top: 20px; font-weight: bold; letter-spacing: 1px;">ĐANG TỐI ƯU ẢNH & TÁCH NỀN...</p>
-    <p style="font-size: 12px; color: #aaa;">Vui lòng không tắt trình duyệt</p>
+    <div class="spinner"></div>
+    <p style="margin-top: 15px; font-weight: bold;" id="loading-text">AI ĐANG TÁCH NỀN...</p>
 </div>
 
-<iframe id="vr-frame" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
+<div id="toast" class="toast">Thông báo</div>
+
+<div id="intro-overlay">
+    <video id="v-intro" autoplay muted loop playsinline>
+        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
+    </video>
+    <div class="skip-btn" onclick="killIntro()">BẮT ĐẦU TRẢI NGHIỆM <i class="fas fa-arrow-right"></i></div>
+</div>
+
+<div class="top-bar">
+    <div class="nav-group">
+        <button class="round-btn active" id="btn-vr" onclick="switchTab('vr')" title="VR Tour"><i class="fas fa-vr-cardboard"></i></button>
+        <button class="round-btn" id="btn-shop" onclick="switchTab('shop')" title="Gian hàng"><i class="fas fa-shopping-bag"></i></button>
+    </div>
+    <div class="nav-group">
+        <button class="round-btn" onclick="toggleAI()" style="background: var(--primary); border:none;"><i class="fas fa-magic"></i> AI</button>
+    </div>
+</div>
+
+<div id="page-vr" class="pano-page active">
+    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" allowfullscreen></iframe>
+</div>
+
+<div id="page-shop" class="pano-page">
+    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb" allowfullscreen></iframe>
+</div>
+
 <canvas id="ui-canvas"></canvas>
 
-<div class="ui-container" id="main-ui">
-    <div class="top-bar interactive">
-        <button class="btn-round" onclick="switchTab('vr')">VR</button>
-        <button class="btn-round" onclick="switchTab('shop')">SHOP</button>
-        <button class="btn-round" onclick="toggleAI()">AI</button>
-    </div>
-
-    <div class="controls interactive" id="ai-menu">
-        <h3 style="margin:0 0 15px 0; text-align:center;">Ninh Thuận AI</h3>
-        <label for="input-file" class="btn-full" style="display:block; text-align:center;">📸 CHỌN ẢNH NGƯỜI</label>
-        <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
-        
-        <div id="edit-area" style="display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
-            <p style="font-size:12px; margin-bottom: 5px;">Kích thước ảnh:</p>
-            <input type="range" id="size-slider" min="0.1" max="2.0" step="0.01" value="0.7" style="width:100%" oninput="draw()">
-            <button class="btn-full" style="background: #27ae60;" onclick="hideUI()">👁️ CHẾ ĐỘ CHỤP ẢNH</button>
-        </div>
-    </div>
+<div id="tutorial" class="tutorial-hint">
+    <i class="fas fa-hand-pointer hand-icon"></i>
+    <p>Dùng 1 ngón để di chuyển<br>Dùng 2 ngón để phóng to/thu nhỏ</p>
 </div>
 
-<div id="toast">Giao diện đã ẩn. Hãy chụp màn hình!</div>
+<div class="ai-controls hidden" id="ai-menu">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0; font-size:16px;">📸 STUDIO ẢO</h3>
+        <i class="fas fa-times" onclick="toggleAI()" style="cursor:pointer; padding:5px;"></i>
+    </div>
+    
+    <div class="control-row">
+        <button class="btn-action btn-upload" onclick="document.getElementById('input-file').click()">
+            <i class="fas fa-user-plus"></i> Tải ảnh người
+        </button>
+        <button class="btn-action btn-bg" onclick="document.getElementById('input-bg').click()">
+            <i class="fas fa-image"></i> Đổi nền thiếp
+        </button>
+    </div>
+    
+    <div class="control-row" id="save-area" style="opacity: 0.5; pointer-events: none;">
+        <button class="btn-action btn-save" onclick="savePostcard()">
+            <i class="fas fa-download"></i> Lưu Bưu Thiếp
+        </button>
+    </div>
+
+    <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="processAI(this)">
+    <input type="file" id="input-bg" accept="image/*" style="display: none;" onchange="changeBackground(this)">
+    
+    <p style="font-size: 11px; margin-top: 10px; color: #aaa; text-align: center;">*Lưu ý: Để ảnh đẹp nhất với VR, hãy dùng chức năng Chụp màn hình của điện thoại.</p>
+</div>
 
 <script>
+    // --- CẤU HÌNH ---
+    const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC"; // Lưu ý: API Key Free có giới hạn.
+    
+    // --- BIẾN TOÀN CỤC ---
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
-    let userImg = null;
-    let imgPos = { x: 0, y: 0, w: 0, h: 0 };
-    let isDragging = false;
-    let startX, startY;
+    
+    let appState = {
+        characterImg: null, // Ảnh nhân vật sau khi tách nền
+        bgImg: null,        // Ảnh nền tùy chỉnh (nếu có)
+        x: 0, y: 0,         // Vị trí nhân vật
+        scale: 1,           // Độ zoom nhân vật
+        isDragging: false,
+        lastTouchDistance: 0,
+        startX: 0, startY: 0
+    };
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // --- KHỞI TẠO ---
+    window.onload = () => { resizeCanvas(); };
+    window.onresize = resizeCanvas;
 
-    function closeIntro() {
-        document.getElementById('v-intro').pause();
-        document.getElementById('intro-overlay').style.display = 'none';
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawCanvas();
     }
 
-    function toggleAI() { document.getElementById('ai-menu').classList.toggle('show'); }
-
-    function switchTab(t) {
-        const f = document.getElementById('vr-frame');
-        f.src = t === 'vr' ? "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" : "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb";
+    // --- ĐIỀU HƯỚNG TAB ---
+    function switchTab(tab) {
+        killIntro();
+        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('page-' + tab).classList.add('active');
+        document.getElementById('btn-' + tab).classList.add('active');
     }
 
-    // --- HÀM QUAN TRỌNG: NÉN ẢNH TRƯỚC KHI TÁCH NỀN ---
-    async function handleImageUpload(input) {
-        if (!input.files[0]) return;
-        const loading = document.getElementById('loading');
-        loading.style.display = 'flex';
-
-        try {
-            // 1. Nén ảnh xuống tối đa 800px để tránh tràn RAM
-            const compressedBlob = await compressImage(input.files[0], 800);
-            
-            // 2. Chạy AI tách nền trên file đã nén
-            const resultBlob = await imglyRemoveBackground(compressedBlob, {
-                publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.0.3/dist/',
-                progress: (p) => console.log(`Processing: ${Math.round(p * 100)}%`)
-            });
-
-            // 3. Hiển thị kết quả lên Canvas
-            const url = URL.createObjectURL(resultBlob);
-            const img = new Image();
-            img.onload = () => {
-                userImg = img;
-                const ratio = img.width / img.height;
-                imgPos.h = canvas.height * 0.6;
-                imgPos.w = imgPos.h * ratio;
-                imgPos.x = (canvas.width - imgPos.w) / 2;
-                imgPos.y = canvas.height - imgPos.h - 50;
-                
-                loading.style.display = 'none';
-                document.getElementById('edit-area').style.display = 'block';
-                canvas.classList.add('canvas-active');
-                draw();
-            };
-            img.src = url;
-        } catch (error) {
-            console.error(error);
-            alert("Lỗi: Máy không đủ bộ nhớ. Hãy thử ảnh khác hoặc khởi động lại trình duyệt!");
-            loading.style.display = 'none';
+    function killIntro() {
+        const intro = document.getElementById('intro-overlay');
+        if (intro) {
+            document.getElementById('v-intro').pause();
+            intro.style.opacity = 0;
+            setTimeout(() => intro.remove(), 500);
         }
     }
 
-    function compressImage(file, maxSide) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvasTmp = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if (w > h && w > maxSide) { h *= maxSide / w; w = maxSide; }
-                    else if (h > maxSide) { w *= maxSide / h; h = maxSide; }
-                    canvasTmp.width = w; canvasTmp.height = h;
-                    canvasTmp.getContext('2d').drawImage(img, 0, 0, w, h);
-                    canvasTmp.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
-                };
+    function toggleAI() {
+        killIntro();
+        document.getElementById('ai-menu').classList.toggle('hidden');
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.style.opacity = 1; t.style.top = '100px';
+        setTimeout(() => { t.style.opacity = 0; t.style.top = '80px'; }, 3000);
+    }
+
+    // --- XỬ LÝ ẢNH & AI ---
+    async function processAI(input) {
+        if (!input.files[0]) return;
+        
+        document.getElementById('loading').style.display = "flex";
+        document.getElementById('loading-text').innerText = "AI ĐANG TÁCH NỀN...";
+        
+        const formData = new FormData();
+        formData.append("image_file", input.files[0]);
+
+        try {
+            const res = await fetch("https://api.remove.bg/v1.0/removebg", { 
+                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData 
+            });
+
+            if (res.status === 402 || res.status === 403) {
+                throw new Error("Hết lượt miễn phí API hoặc Key lỗi.");
+            }
+            if (!res.ok) throw new Error("Lỗi kết nối Server.");
+
+            const blob = await res.blob();
+            createCharacter(blob);
+
+        } catch (e) {
+            console.error(e);
+            showToast("⚠️ Lỗi AI: " + e.message + " -> Dùng ảnh gốc.");
+            // Fallback: dùng ảnh gốc nếu lỗi API
+            createCharacter(input.files[0]);
+        }
+    }
+
+    function createCharacter(blobOrFile) {
+        const img = new Image();
+        img.onload = () => {
+            appState.characterImg = img;
+            // Reset vị trí về giữa màn hình
+            const ratio = img.width / img.height;
+            const targetHeight = canvas.height * 0.6; // Cao 60% màn hình
+            appState.scale = targetHeight / img.height; 
+            appState.x = (canvas.width - (img.width * appState.scale)) / 2;
+            appState.y = canvas.height - (img.height * appState.scale) - 50;
+            
+            document.getElementById('loading').style.display = "none";
+            document.getElementById('save-area').style.opacity = 1;
+            document.getElementById('save-area').style.pointerEvents = "auto";
+            
+            // Hiển thị hướng dẫn
+            document.getElementById('tutorial').style.opacity = 1;
+            setTimeout(() => { document.getElementById('tutorial').style.opacity = 0; }, 4000);
+
+            drawCanvas();
+        };
+        img.src = URL.createObjectURL(blobOrFile);
+    }
+
+    // Thay đổi ảnh nền (để tạo bưu thiếp)
+    function changeBackground(input) {
+        if (!input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                appState.bgImg = img;
+                drawCanvas();
+                showToast("✅ Đã đổi nền bưu thiếp");
             };
-        });
+            img.src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
     }
 
-    function draw() {
+    // --- VẼ CANVAS (CORE LOOP) ---
+    function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (!userImg) return;
-        const s = document.getElementById('size-slider').value;
-        ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
+
+        // 1. Vẽ nền tùy chỉnh (nếu có - dùng khi xuất bưu thiếp)
+        if (appState.bgImg) {
+            // Căn chỉnh cover (lấp đầy màn hình)
+            const ratio = Math.max(canvas.width / appState.bgImg.width, canvas.height / appState.bgImg.height);
+            const centerShift_x = (canvas.width - appState.bgImg.width * ratio) / 2;
+            const centerShift_y = (canvas.height - appState.bgImg.height * ratio) / 2;
+            ctx.drawImage(appState.bgImg, 0, 0, appState.bgImg.width, appState.bgImg.height,
+                          centerShift_x, centerShift_y, appState.bgImg.width * ratio, appState.bgImg.height * ratio);
+        }
+
+        // 2. Vẽ nhân vật
+        if (appState.characterImg) {
+            const w = appState.characterImg.width * appState.scale;
+            const h = appState.characterImg.height * appState.scale;
+            
+            // Đổ bóng nhẹ cho nhân vật để thật hơn
+            ctx.save();
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 10;
+            ctx.drawImage(appState.characterImg, appState.x, appState.y, w, h);
+            ctx.restore();
+            
+            // Vẽ khung bao quanh nếu đang chọn (option)
+            /* ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(appState.x, appState.y, w, h);
+            */
+        }
     }
 
-    function hideUI() {
-        document.getElementById('main-ui').style.display = 'none';
-        document.getElementById('toast').style.display = 'block';
-        setTimeout(() => { 
-            document.getElementById('toast').style.display = 'none'; 
-            document.getElementById('main-ui').style.display = 'block'; 
-        }, 5000);
+    // --- XỬ LÝ CẢM ỨNG (TOUCH & DRAG) ---
+    // Kiểm tra xem có chạm vào nhân vật không
+    function isHit(x, y) {
+        if (!appState.characterImg) return false;
+        const w = appState.characterImg.width * appState.scale;
+        const h = appState.characterImg.height * appState.scale;
+        return x >= appState.x && x <= appState.x + w && y >= appState.y && y <= appState.y + h;
     }
 
-    // Touch & Mouse Handling
-    function start(e) {
-        const p = e.touches ? e.touches[0] : e;
-        isDragging = true; startX = p.clientX - imgPos.x; startY = p.clientY - imgPos.y;
+    // Mouse Events (PC)
+    canvas.addEventListener('mousedown', e => {
+        if (isHit(e.clientX, e.clientY)) {
+            appState.isDragging = true;
+            appState.startX = e.clientX - appState.x;
+            appState.startY = e.clientY - appState.y;
+        }
+    });
+    window.addEventListener('mousemove', e => {
+        if (appState.isDragging) {
+            appState.x = e.clientX - appState.startX;
+            appState.y = e.clientY - appState.startY;
+            requestAnimationFrame(drawCanvas);
+        }
+    });
+    window.addEventListener('mouseup', () => appState.isDragging = false);
+
+    // Touch Events (Mobile)
+    canvas.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
+            // Kéo thả 1 ngón
+            const t = e.touches[0];
+            if (isHit(t.clientX, t.clientY)) {
+                appState.isDragging = true;
+                appState.startX = t.clientX - appState.x;
+                appState.startY = t.clientY - appState.y;
+            }
+        } else if (e.touches.length === 2) {
+            // Zoom 2 ngón
+            appState.isDragging = false;
+            appState.lastTouchDistance = getDistance(e.touches);
+        }
+    }, {passive: false});
+
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault(); // Chặn cuộn trang
+        if (e.touches.length === 1 && appState.isDragging) {
+            const t = e.touches[0];
+            appState.x = t.clientX - appState.startX;
+            appState.y = t.clientY - appState.startY;
+            requestAnimationFrame(drawCanvas);
+        } else if (e.touches.length === 2) {
+            const dist = getDistance(e.touches);
+            const delta = dist - appState.lastTouchDistance;
+            
+            // Giới hạn zoom
+            const newScale = appState.scale + (delta * 0.005);
+            if (newScale > 0.1 && newScale < 5.0) {
+                appState.scale = newScale;
+                // Cố gắng giữ tâm (đơn giản hóa: zoom tại chỗ hiện tại)
+                // Nâng cao: cần tính lại x,y để zoom vào giữa 2 ngón tay
+            }
+            appState.lastTouchDistance = dist;
+            requestAnimationFrame(drawCanvas);
+        }
+    }, {passive: false});
+
+    canvas.addEventListener('touchend', () => appState.isDragging = false);
+
+    function getDistance(touches) {
+        return Math.hypot(
+            touches[0].clientX - touches[1].clientX,
+            touches[0].clientY - touches[1].clientY
+        );
     }
-    function move(e) {
-        if (!isDragging) return;
-        const p = e.touches ? e.touches[0] : e;
-        imgPos.x = p.clientX - startX; imgPos.y = p.clientY - startY;
-        draw();
+
+    // --- LƯU ẢNH ---
+    function savePostcard() {
+        if (!appState.characterImg) return;
+        
+        // Kiểm tra xem người dùng có đặt nền chưa
+        if (!appState.bgImg) {
+            const confirmSave = confirm("LƯU Ý: Do giới hạn bảo mật, hệ thống không thể chụp trực tiếp cảnh VR 360 vào ảnh tải về.\n\nBạn có muốn tải về ảnh nhân vật đã tách nền (trong suốt) để tự ghép, hoặc hủy để tải ảnh nền khác lên?");
+            if (!confirmSave) return;
+        }
+
+        // Tạo canvas tạm để xuất ảnh chất lượng cao
+        showToast("⏳ Đang tạo ảnh...");
+        setTimeout(() => {
+            const link = document.createElement('a');
+            link.download = 'ninh-thuan-postcard-' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast("✅ Đã lưu ảnh vào máy!");
+        }, 500);
     }
-    canvas.addEventListener('mousedown', start);
-    canvas.addEventListener('touchstart', start, {passive: false});
-    window.addEventListener('mousemove', move);
-    window.addEventListener('touchmove', move, {passive: false});
-    window.addEventListener('mouseup', () => isDragging = false);
-    window.addEventListener('touchend', () => isDragging = false);
+
 </script>
 </body>
 </html>
