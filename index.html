@@ -3,234 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI Studio - Final Fix</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <title>Ninh Thuận AI - Manual Shot</title>
     <style>
-        :root { --primary: #ff9800; --glass: rgba(0, 0, 0, 0.7); --text: #fff; }
+        :root { --primary: #ff9800; --glass: rgba(0, 0, 0, 0.6); --text: #fff; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
 
-        /* --- 1. LỚP VIDEO INTRO --- */
+        /* --- 1. LỚP VIDEO INTRO (Cao nhất) --- */
         #intro-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         #intro-overlay video { width: 100%; height: 100%; object-fit: cover; position: absolute; }
         #btn-skip {
-            position: absolute; bottom: 50px; padding: 10px 25px;
+            position: absolute; bottom: 80px; padding: 12px 30px;
             background: rgba(255,255,255,0.2); border: 1px solid white; color: white;
-            border-radius: 30px; cursor: pointer; z-index: 10000; backdrop-filter: blur(5px);
+            border-radius: 30px; cursor: pointer; z-index: 100000; backdrop-filter: blur(5px);
+            font-size: 16px; font-weight: bold; pointer-events: auto; /* Bắt buộc */
         }
 
-        /* --- 2. LỚP NỀN (VR & ẢNH TĨNH) --- */
-        .layer-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
-        /* Iframe VR (Mặc định hiện) */
-        #vr-frame { z-index: 1; border: none; }
-        
-        /* Ảnh nền tĩnh (Dùng khi chụp ảnh - Mặc định ẩn) */
-        #static-bg { 
-            z-index: 2; background-size: cover; background-position: center; 
-            display: none; background-color: #222;
-        }
+        /* --- 2. LỚP NỀN VR (Thấp nhất) --- */
+        #vr-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; border: none; }
 
-        /* --- 3. LỚP CANVAS NGƯỜI (Ở GIỮA) --- */
+        /* --- 3. LỚP CANVAS NGƯỜI (Ở giữa) --- */
         #ui-canvas { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 10; touch-action: none; 
-            pointer-events: none; /* Mặc định KHÔNG chặn click để bấm được VR */
+            z-index: 50; touch-action: none; pointer-events: none; /* Mặc định cho phép bấm xuyên qua */
         }
-        /* Class này kích hoạt khi đang chỉnh sửa người */
-        .editing-mode { pointer-events: auto !important; cursor: move; border: 2px solid var(--primary); }
+        /* Khi có ảnh người thì bật cảm ứng lên, nhưng chỉ vùng cần thiết */
+        .has-image { pointer-events: auto !important; }
 
-        /* --- 4. GIAO DIỆN ĐIỀU KHIỂN (TRÊN CÙNG) --- */
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
-        .pointer-auto { pointer-events: auto; }
-
-        .top-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; display: flex; gap: 10px; justify-content: space-between; box-sizing: border-box; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
-        .btn-icon { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,0.2); color: white; font-size: 18px; cursor: pointer; backdrop-filter: blur(5px); }
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 152, 0, 0.4); }
-
-        /* Menu Công Cụ (Bên dưới) */
-        .bottom-tools {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
-            padding: 15px; border-radius: 20px 20px 0 0;
-            display: none; flex-direction: column; gap: 10px;
-            box-sizing: border-box; transition: transform 0.3s;
+        /* --- 4. GIAO DIỆN ĐIỀU KHIỂN (Trên canvas) --- */
+        .ui-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; pointer-events: none; /* Để bấm xuyên qua vùng trống vào VR */
         }
-        .bottom-tools.active { display: flex; pointer-events: auto; }
+        
+        /* Các thành phần con phải bật lại pointer-events */
+        .interactive { pointer-events: auto; }
 
-        .scroll-list { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 5px; }
-        .bg-thumb { width: 80px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid transparent; cursor: pointer; }
-        .bg-thumb.selected { border-color: var(--primary); }
+        .top-bar { 
+            position: absolute; top: 15px; left: 15px; display: flex; gap: 10px; 
+        }
+        .btn-round { 
+            width: 45px; height: 45px; border-radius: 50%; border: none; 
+            background: var(--primary); color: white; font-weight: bold; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer;
+        }
+
+        /* Menu Công Cụ */
+        .controls {
+            position: absolute; top: 70px; left: 15px; width: 260px;
+            background: var(--glass); padding: 15px; border-radius: 15px;
+            backdrop-filter: blur(10px); color: white;
+            display: none;
+        }
+        .controls.show { display: block; }
+
+        .btn-action { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        .hint { font-size: 11px; text-align: center; margin-top: 5px; color: #ddd; }
+
+        /* Thông báo chụp ảnh */
+        #toast {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+            z-index: 20000; text-align: center; display: none;
+        }
 
         /* Loading */
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 30000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .loader { width: 30px; height: 30px; border: 3px solid #fff; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s infinite; margin-bottom: 10px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        h4 { margin: 0 0 5px 0; color: #ccc; font-size: 12px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <div id="intro-overlay">
     <video id="v-intro" autoplay muted loop playsinline src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4"></video>
-    <button id="btn-skip" onclick="closeIntro()">BẮT ĐẦU TRẢI NGHIỆM</button>
+    <button id="btn-skip" onclick="closeIntro()">BẮT ĐẦU</button>
 </div>
 
-<div id="loading"><div class="loader"></div><p id="load-text">Đang xử lý...</p></div>
+<div id="loading"><div class="loader"></div><p id="load-text">Đang tách nền...</p></div>
 
-<iframe id="vr-frame" class="layer-bg" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-<div id="static-bg" class="layer-bg"></div>
+<iframe id="vr-frame" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
 
 <canvas id="ui-canvas"></canvas>
 
-<div class="ui-layer">
-    <div class="top-bar pointer-auto">
-        <div>
-            <button class="btn-icon" onclick="resetApp()">↺</button> </div>
-        <button class="btn-primary" onclick="toggleStudio()">📸 STUDIO ẢNH</button>
+<div class="ui-container" id="main-ui">
+    <div class="top-bar interactive">
+        <button class="btn-round" onclick="switchTab('vr')">VR</button>
+        <button class="btn-round" onclick="switchTab('shop')">SHOP</button>
+        <button class="btn-round" onclick="toggleAI()">AI</button>
     </div>
 
-    <div id="studio-tools" class="bottom-tools">
+    <div class="controls interactive" id="ai-menu">
+        <h3 style="margin:0 0 10px 0; text-align:center;">STUDIO NINH THUẬN</h3>
         
-        <div>
-            <h4>1. Chọn Bối Cảnh (Để lưu ảnh)</h4>
-            <div class="scroll-list">
-                <img src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c/thumb.jpg" class="bg-thumb" onclick="changeBg(this.src)">
-                <img src="https://live.staticflickr.com/65535/53443360677_5d47565984_k.jpg" class="bg-thumb" onclick="changeBg(this.src)">
-                <img src="https://live.staticflickr.com/65535/53444583949_e2d6342674_k.jpg" class="bg-thumb" onclick="changeBg(this.src)">
-                <img src="https://cdn.pixabay.com/photo/2016/11/14/03/29/temple-1822502_1280.jpg" class="bg-thumb" onclick="changeBg(this.src)">
-            </div>
-        </div>
-
-        <div style="margin-top: 10px; display:flex; gap:10px; align-items:center;">
-            <div style="flex:1;">
-                <h4>2. Nhân Vật</h4>
-                <label for="inp-file" class="btn-primary" style="font-size:12px; display:inline-block;">📂 Tải ảnh lên</label>
-                <input type="file" id="inp-file" hidden accept="image/*" onchange="processAI(this)">
-            </div>
+        <label for="input-file" class="btn-action" style="display:block; text-align:center; cursor:pointer">📸 Thêm Người</label>
+        <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="processAI(this)">
+        
+        <div id="edit-area" style="display: none;">
+            <p style="font-size:12px; margin:10px 0 5px 0">Chỉnh kích thước:</p>
+            <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="0.8" style="width:100%" oninput="draw()">
             
-            <div style="flex:1;">
-                <h4>3. Kích Thước</h4>
-                <input type="range" id="scale-range" min="0.5" max="2.0" step="0.1" value="1.0" oninput="draw()" style="width:100%">
-            </div>
+            <p class="hint">💡 Chạm vào người để di chuyển</p>
+            
+            <button class="btn-action" style="background: #27ae60;" onclick="hideForScreenshot()">👁️ Ẩn nút để chụp ảnh</button>
         </div>
-
-        <button class="btn-primary" style="width:100%; margin-top:15px; background: #2ecc71;" onclick="saveImage()">💾 LƯU BƯU THIẾP</button>
-        <button class="btn-icon" style="position:absolute; top:10px; right:10px; width:30px; height:30px;" onclick="toggleStudio()">✕</button>
     </div>
+</div>
+
+<div id="toast">
+    <h3>Sẵn sàng!</h3>
+    <p>Hãy nhấn phím <b>Nguồn + Giảm âm lượng</b><br>để chụp màn hình ngay bây giờ.</p>
 </div>
 
 <script>
     // --- CẤU HÌNH ---
     const CLOUD_NAME = "dxqbzw5s3";
     const UPLOAD_PRESET = "Khanh_Hoa";
-    
+
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
-    const staticBg = document.getElementById('static-bg');
     const vrFrame = document.getElementById('vr-frame');
-    
+
     let userImg = null;
     let imgPos = { x: 0, y: 0, w: 0, h: 0 };
     let isDragging = false;
     let startX, startY;
 
-    // --- KHỞI TẠO ---
-    window.onload = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
+    // Fix kích thước Canvas
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     function closeIntro() {
         document.getElementById('intro-overlay').style.display = 'none';
         document.getElementById('v-intro').pause();
     }
 
-    function resetApp() {
-        location.reload();
+    function switchTab(tab) {
+        if(tab === 'vr') vrFrame.src = "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c";
+        if(tab === 'shop') vrFrame.src = "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb";
     }
 
-    // --- CHẾ ĐỘ STUDIO ---
-    function toggleStudio() {
-        const tools = document.getElementById('studio-tools');
-        const isActive = tools.classList.contains('active');
-        
-        if (!isActive) {
-            // Bật Studio: Hiện công cụ, Bật cảm ứng Canvas, Hiện nền tĩnh
-            tools.classList.add('active');
-            canvas.classList.add('editing-mode'); // CHO PHÉP CHẠM ĐỂ KÉO
-            
-            // Tạm ẩn VR để hiện nền tĩnh (fix lỗi chụp ảnh đen)
-            vrFrame.style.display = 'none';
-            staticBg.style.display = 'block';
-            
-            // Set nền mặc định nếu chưa có
-            if(!staticBg.style.backgroundImage) {
-                 changeBg('https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c/thumb.jpg');
-            }
-        } else {
-            // Tắt Studio: Về lại VR
-            tools.classList.remove('active');
-            canvas.classList.remove('editing-mode'); // TẮT CẢM ỨNG ĐỂ BẤM ĐƯỢC NÚT VR
-            
-            vrFrame.style.display = 'block';
-            staticBg.style.display = 'none';
-        }
+    function toggleAI() {
+        document.getElementById('ai-menu').classList.toggle('show');
     }
 
-    function changeBg(url) {
-        // Cần dùng Proxy hoặc đảm bảo ảnh có CORS, ở đây dùng background-image CSS để hiển thị
-        // Lưu ý: html2canvas có thể lỗi nếu ảnh từ domain chặn CORS. 
-        // Tốt nhất nên dùng ảnh nội bộ hoặc ảnh từ host cho phép (như imgur, cloudinary).
-        staticBg.style.backgroundImage = `url('${url}')`;
-        
-        // Hightlight thumbnail
-        document.querySelectorAll('.bg-thumb').forEach(img => img.classList.remove('selected'));
-        event.target.classList.add('selected');
-    }
-
-    // --- XỬ LÝ AI ---
+    // --- TÁCH NỀN AI ---
     async function processAI(input) {
         if (!input.files[0]) return;
-        
         document.getElementById('loading').style.display = 'flex';
-        document.getElementById('load-text').innerText = "Đang tách nền...";
-
+        
         const formData = new FormData();
         formData.append('file', input.files[0]);
         formData.append('upload_preset', UPLOAD_PRESET);
 
         try {
-            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
+            const data = await res.json();
             
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
                 userImg = img;
                 const ratio = img.width / img.height;
-                imgPos.h = canvas.height * 0.6; 
+                imgPos.h = canvas.height * 0.5;
                 imgPos.w = imgPos.h * ratio;
                 imgPos.x = (canvas.width - imgPos.w) / 2;
-                imgPos.y = canvas.height - imgPos.h - 20;
+                imgPos.y = canvas.height - imgPos.h - 50;
                 
                 document.getElementById('loading').style.display = 'none';
-                draw();
+                document.getElementById('edit-area').style.display = 'block';
                 
-                // Tự động bật chế độ Studio nếu chưa bật
-                if (!document.getElementById('studio-tools').classList.contains('active')) {
-                    toggleStudio();
-                }
+                // Fix lỗi đơ: Chỉ bật cảm ứng canvas khi đã có ảnh
+                canvas.classList.add('has-image');
+                draw();
             };
             img.src = data.secure_url.replace('/upload/', '/upload/e_background_removal/');
-        } catch (err) {
-            alert("Lỗi tải ảnh. Vui lòng thử lại!");
+        } catch (e) {
+            alert("Lỗi tải ảnh");
             document.getElementById('loading').style.display = 'none';
         }
     }
@@ -238,31 +189,55 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!userImg) return;
-        const scale = document.getElementById('scale-range').value;
-        ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * scale, imgPos.h * scale);
+        const s = document.getElementById('size-slider').value;
+        ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
     }
 
-    // --- LOGIC KÉO THẢ (Chỉ hoạt động khi có class 'editing-mode') ---
-    function handleStart(e) {
-        if (!canvas.classList.contains('editing-mode')) return; // Chặn nếu chưa bật Studio
+    // --- CHỨC NĂNG ẨN GIAO DIỆN (ĐỂ CHỤP MÀN HÌNH) ---
+    function hideForScreenshot() {
+        // 1. Ẩn toàn bộ nút bấm
+        document.getElementById('main-ui').style.display = 'none';
         
+        // 2. Hiện thông báo hướng dẫn
+        const toast = document.getElementById('toast');
+        toast.style.display = 'block';
+
+        // 3. Sau 2 giây thì ẩn thông báo đi để màn hình sạch sẽ cho khách chụp
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 2500);
+
+        // 4. Sau 8 giây thì hiện lại nút bấm (đề phòng khách chụp xong muốn chỉnh tiếp)
+        setTimeout(() => {
+            document.getElementById('main-ui').style.display = 'block';
+        }, 8000);
+    }
+
+    // --- DI CHUYỂN NGƯỜI ---
+    // Mẹo: Nếu click vào khoảng trắng thì sự kiện sẽ xuyên qua xuống Iframe VR
+    // Nếu click vào người thì sẽ bắt sự kiện di chuyển
+    function handleStart(e) {
+        if (!userImg) return;
         const pos = e.touches ? e.touches[0] : e;
-        const scale = document.getElementById('scale-range').value;
-        if (pos.clientX >= imgPos.x && pos.clientX <= imgPos.x + imgPos.w * scale &&
-            pos.clientY >= imgPos.y && pos.clientY <= imgPos.y + imgPos.h * scale) {
+        const s = document.getElementById('size-slider').value;
+        
+        // Kiểm tra xem có chạm trúng người không
+        if (pos.clientX >= imgPos.x && pos.clientX <= imgPos.x + imgPos.w * s &&
+            pos.clientY >= imgPos.y && pos.clientY <= imgPos.y + imgPos.h * s) {
             isDragging = true;
             startX = pos.clientX - imgPos.x;
             startY = pos.clientY - imgPos.y;
+            e.preventDefault(); // Chặn cuộn trang/xoay VR khi đang kéo người
         }
     }
 
     function handleMove(e) {
         if (!isDragging) return;
-        e.preventDefault();
         const pos = e.touches ? e.touches[0] : e;
         imgPos.x = pos.clientX - startX;
         imgPos.y = pos.clientY - startY;
         draw();
+        e.preventDefault();
     }
 
     canvas.addEventListener('mousedown', handleStart);
@@ -271,44 +246,12 @@
     window.addEventListener('touchmove', handleMove, {passive: false});
     window.addEventListener('mouseup', () => isDragging = false);
     window.addEventListener('touchend', () => isDragging = false);
-
-    // --- LƯU ẢNH ---
-    function saveImage() {
-        document.getElementById('loading').style.display = 'flex';
-        document.getElementById('load-text').innerText = "Đang tạo bưu thiếp...";
-        
-        // Ẩn UI đi để chụp
-        document.querySelector('.ui-layer').style.display = 'none';
-
-        // Chụp body (lúc này body đang hiển thị static-bg chứ không phải iframe)
-        setTimeout(() => {
-            html2canvas(document.body, {
-                allowTaint: true,
-                useCORS: true,
-                width: window.innerWidth,
-                height: window.innerHeight
-            }).then(c => {
-                const a = document.createElement('a');
-                a.download = 'NinhThuan-Tour.png';
-                a.href = c.toDataURL('image/png');
-                a.click();
-                
-                // Khôi phục giao diện
-                document.getElementById('loading').style.display = 'none';
-                document.querySelector('.ui-layer').style.display = 'block';
-            }).catch(err => {
-                alert("Không thể lưu ảnh do lỗi bảo mật trình duyệt với ảnh nền này.");
-                document.getElementById('loading').style.display = 'none';
-                document.querySelector('.ui-layer').style.display = 'block';
-            });
-        }, 500);
-    }
     
     window.onresize = () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         draw();
-    }
+    };
 </script>
 </body>
 </html>
