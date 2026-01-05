@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #ff9800; --success: #2ecc71; --glass: rgba(255, 255, 255, 0.9); }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
         
         /* Iframe Tab */
         .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
@@ -19,8 +19,7 @@
 
         /* Nút bấm điều hướng */
         .top-btns { position: absolute; top: 15px; left: 15px; z-index: 10000; display: flex; gap: 12px; }
-        .round-btn { width: 55px; height: 55px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-size: 13px; transition: 0.2s; }
-        .round-btn:active { transform: scale(0.9); }
+        .round-btn { width: 55px; height: 55px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-size: 13px; }
 
         /* Menu Studio AI */
         .controls { position: absolute; top: 85px; left: 15px; z-index: 9000; width: 260px; background: var(--glass); padding: 18px; border-radius: 20px; display: none; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
@@ -32,14 +31,13 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         .btn-main { display: block; width: 100%; padding: 12px; background: var(--primary); color: white; border-radius: 10px; text-align: center; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; font-size: 14px; text-decoration: none; }
-        .btn-save { background: var(--success); }
     </style>
 </head>
 <body>
 
 <div id="loading">
     <div class="loader"></div>
-    <p>AI đang tách nền bưu thiếp...<br><small>(Vui lòng chờ trong giây lát)</small></p>
+    <p>AI đang tách nền từ xa...<br><small>(Giải phóng RAM, không lo treo máy)</small></p>
 </div>
 
 <div class="top-btns">
@@ -57,33 +55,27 @@
 
 <div class="controls" id="ai-menu">
     <h3 style="margin: 0 0 15px 0; font-size: 18px; text-align: center; color: #333;">STUDIO NINH THUẬN</h3>
-    
     <label for="input-file" class="btn-main">📸 Chụp / Chọn ảnh</label>
     <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="handleAIProcess(this)">
     
-    <div id="edit-area" style="display: none; margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
-        <label style="font-size: 12px; color: #666;">Phóng to / Thu nhỏ:</label>
-        <input type="range" id="size-slider" min="0.2" max="2.5" step="0.05" value="1.0" style="width:100%; margin: 10px 0;" oninput="drawCanvas()">
-        <button class="btn-main btn-save" onclick="captureSnapshot()">💾 Lưu bưu thiếp</button>
+    <div id="edit-area" style="display: none; margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+        <input type="range" id="size-slider" min="0.2" max="2.5" step="0.05" value="1.0" style="width:100%;" oninput="drawCanvas()">
+        <button class="btn-main" style="background:#2ecc71" onclick="captureSnapshot()">💾 Lưu bưu thiếp</button>
     </div>
 </div>
 
 <canvas id="ui-canvas"></canvas>
 
 <script>
-    // Thông tin Cloudinary của bạn
-    const CLOUD_NAME = "dxqbzw5s3";
-    const UPLOAD_PRESET = "Khanh_Hoa";
+    const CLOUD_NAME = "dxqbzw5s3"; // Thông tin bạn cung cấp
+    const UPLOAD_PRESET = "Khanh_Hoa"; // Thông tin bạn cung cấp
 
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
     let userImg = null;
 
-    // Thiết lập kích thước canvas
-    window.onload = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     function switchTab(tab) {
         document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
@@ -96,15 +88,13 @@
 
     async function handleAIProcess(input) {
         if (!input.files[0]) return;
-        const loader = document.getElementById('loading');
-        loader.style.display = 'flex';
+        document.getElementById('loading').style.display = 'flex';
 
         const formData = new FormData();
         formData.append('file', input.files[0]);
         formData.append('upload_preset', UPLOAD_PRESET);
 
         try {
-            // Bước 1: Upload và yêu cầu Cloudinary tách nền
             const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
                 method: 'POST',
                 body: formData
@@ -113,60 +103,46 @@
             
             if (data.secure_url) {
                 const img = new Image();
-                // Sửa URL để thêm hiệu ứng tách nền background removal
+                // Dùng kỹ thuật e_background_removal của Cloudinary
                 let aiUrl = data.secure_url.replace('/upload/', '/upload/e_background_removal/');
                 
-                img.crossOrigin = "anonymous"; // Tránh lỗi bảo mật khi chụp canvas
+                img.crossOrigin = "anonymous"; 
                 img.onload = () => {
                     userImg = img;
                     document.getElementById('edit-area').style.display = 'block';
-                    loader.style.display = 'none';
+                    document.getElementById('loading').style.display = 'none';
                     drawCanvas();
                 };
                 img.src = aiUrl;
-            } else {
-                throw new Error("Upload failed");
             }
         } catch (err) {
-            console.error(err);
-            alert("Lỗi: Không thể tách nền. Hãy đảm bảo bạn đã đặt Upload Preset là 'Unsigned'.");
-            loader.style.display = 'none';
+            alert("Lỗi kết nối server AI.");
+            document.getElementById('loading').style.display = 'none';
         }
     }
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!userImg) return;
-
         const scale = document.getElementById('size-slider').value;
-        const ratio = userImg.width / userImg.height;
         const h = canvas.height * 0.55 * scale;
-        const w = h * ratio;
-        
-        // Vẽ ở chính giữa phía dưới
+        const w = h * (userImg.width / userImg.height);
         ctx.drawImage(userImg, (canvas.width - w) / 2, canvas.height - h - 30, w, h);
     }
 
     function captureSnapshot() {
-        // Tạm ẩn menu để chụp ảnh đẹp hơn
         document.getElementById('ai-menu').classList.remove('show');
-        
         setTimeout(() => {
-            html2canvas(document.body, { 
-                useCORS: true,
-                allowTaint: false,
-                scale: 2 // Tăng chất lượng ảnh bưu thiếp
-            }).then(c => {
+            html2canvas(document.body, { useCORS: true }).then(c => {
                 const link = document.createElement('a');
-                link.download = 'ninh-thuan-tour.png';
-                link.href = c.toDataURL('image/png');
+                link.download = 'ninh-thuan-ai.png';
+                link.href = c.toDataURL();
                 link.click();
                 document.getElementById('ai-menu').classList.add('show');
             });
         }, 500);
     }
 
-    // Tự động điều chỉnh khi xoay màn hình
     window.onresize = () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
