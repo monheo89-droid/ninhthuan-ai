@@ -27,13 +27,16 @@
         }
         #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Nút bắt đầu tham quan theo yêu cầu */
+        /* Nút bắt đầu tham quan (Thay thế hoàn toàn nút Bỏ qua) */
         .start-btn {
             position: absolute; bottom: 20%; 
-            background: var(--primary); color: #fff; padding: 15px 25px; 
+            background: var(--primary); color: #fff; padding: 15px 30px; 
             border-radius: 40px; border: 2px solid #fff; font-weight: bold;
             font-size: 16px; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
             animation: pulse 2s infinite; cursor: pointer;
+            z-index: 100000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -46,7 +49,7 @@
         .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- 3. ĐIỀU HƯỚNG TỐI ƯU MOBILE (Tránh bị che) --- */
+        /* --- 3. ĐIỀU HƯỚNG TỐI ƯU MOBILE (Tránh bị che khuất) --- */
         .top-btns { 
             position: absolute; top: 25px; left: 20px;
             z-index: 9999; display: flex; flex-direction: column; gap: 12px; 
@@ -82,11 +85,11 @@
 
 <div id="loading"><p>ĐANG XỬ LÝ...</p></div>
 
-<div id="intro-overlay" onclick="killIntro()">
+<div id="intro-overlay">
     <video id="v-intro" autoplay muted loop playsinline>
         <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
     </video>
-    <div class="start-btn">Mời bạn bắt đầu tham quan</div>
+    <div class="start-btn" onclick="killIntro()">Mời bạn bắt đầu tham quan</div>
 </div>
 
 <div class="top-btns">
