@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI Studio</title>
+    <title>Ninh Thuận AI Studio - Fix Lỗi Bộ Nhớ</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#ff9800">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.0.4/dist/imgly-background-removal.min.js"></script>
 
@@ -16,44 +15,53 @@
         :root { --primary: #ff9800; --glass: rgba(0, 0, 0, 0.85); }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
 
-        /* VIDEO INTRO */
-        #intro-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100000; display: flex; align-items: center; justify-content: center; transition: 0.5s; }
+        /* Video Intro */
+        #intro-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100000; display: flex; align-items: center; justify-content: center; }
         #intro-overlay video { position: absolute; width: 100%; height: 100%; object-fit: cover; }
-        #btn-close-intro { position: absolute; bottom: 80px; padding: 12px 30px; background: rgba(255,255,255,0.2); border: 2px solid white; color: white; border-radius: 50px; cursor: pointer; z-index: 100001; font-weight: bold; backdrop-filter: blur(5px); }
+        #btn-close-intro { position: absolute; bottom: 80px; padding: 12px 30px; background: rgba(255,255,255,0.2); border: 2px solid white; color: white; border-radius: 50px; cursor: pointer; z-index: 100001; font-weight: bold; }
 
-        /* LOADING */
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 300000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        .loader { width: 40px; height: 40px; border: 4px solid #fff; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s infinite; }
+        /* Màn hình Loading xử lý AI */
+        #loading { 
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.9); z-index: 300000; 
+            display: none; flex-direction: column; align-items: center; justify-content: center; color: white; 
+        }
+        .loader { width: 50px; height: 50px; border: 5px solid #333; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s infinite linear; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* GIAO DIỆN CHÍNH */
+        /* Background VR & Canvas */
         #vr-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; border: none; }
         #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; touch-action: none; pointer-events: none; }
         .canvas-active { pointer-events: auto !important; }
 
+        /* Menu điều khiển */
         .ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
         .interactive { pointer-events: auto; }
         .top-bar { position: absolute; top: 15px; left: 15px; display: flex; gap: 10px; }
-        .btn-round { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .btn-round { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
 
-        .controls { position: absolute; top: 75px; left: 15px; width: 280px; background: var(--glass); padding: 20px; border-radius: 15px; color: white; display: none; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .controls { 
+            position: absolute; top: 75px; left: 15px; width: 280px; 
+            background: var(--glass); padding: 20px; border-radius: 15px; color: white; 
+            display: none; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); 
+        }
         .controls.show { display: block; }
         .btn-full { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 15px; cursor: pointer; }
 
-        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); color: white; padding: 20px; border-radius: 15px; z-index: 200000; text-align: center; display: none; width: 80%; }
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #27ae60; color: white; padding: 10px 20px; border-radius: 20px; display: none; z-index: 400000; }
     </style>
 </head>
 <body>
 
 <div id="intro-overlay">
     <video id="v-intro" autoplay muted loop playsinline src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4"></video>
-    <button id="btn-close-intro" onclick="closeIntro()">KHÁM PHÁ NGAY</button>
+    <button id="btn-close-intro" onclick="closeIntro()">VÀO STUDIO</button>
 </div>
 
 <div id="loading">
     <div class="loader"></div>
-    <p style="margin-top: 20px; font-weight: bold;">ĐANG XỬ LÝ AI...</p>
-    <p style="font-size: 12px; color: #aaa;">Tự động nén và tách nền...</p>
+    <p style="margin-top: 20px; font-weight: bold; letter-spacing: 1px;">ĐANG TỐI ƯU ẢNH & TÁCH NỀN...</p>
+    <p style="font-size: 12px; color: #aaa;">Vui lòng không tắt trình duyệt</p>
 </div>
 
 <iframe id="vr-frame" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
@@ -67,22 +75,19 @@
     </div>
 
     <div class="controls interactive" id="ai-menu">
-        <h3 style="margin:0 0 15px 0; text-align:center;">STUDIO ẢNH ẢO</h3>
-        <label for="input-file" class="btn-full" style="display:block; text-align:center; background:#3498db;">📸 CHỌN ẢNH NGƯỜI</label>
-        <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="processLocalAI(this)">
+        <h3 style="margin:0 0 15px 0; text-align:center;">Ninh Thuận AI</h3>
+        <label for="input-file" class="btn-full" style="display:block; text-align:center;">📸 CHỌN ẢNH NGƯỜI</label>
+        <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
         
-        <div id="edit-area" style="display: none;">
-            <p style="font-size:12px; margin:15px 0 5px 0">Kích thước:</p>
+        <div id="edit-area" style="display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
+            <p style="font-size:12px; margin-bottom: 5px;">Kích thước ảnh:</p>
             <input type="range" id="size-slider" min="0.1" max="2.0" step="0.01" value="0.7" style="width:100%" oninput="draw()">
-            <button class="btn-full" style="background: #27ae60;" onclick="hideMode()">👁️ CHẾ ĐỘ CHỤP ẢNH</button>
+            <button class="btn-full" style="background: #27ae60;" onclick="hideUI()">👁️ CHẾ ĐỘ CHỤP ẢNH</button>
         </div>
     </div>
 </div>
 
-<div id="toast">
-    <h2 style="color: #2ecc71;">SẴN SÀNG!</h2>
-    <p>Giao diện đã ẩn. Vui lòng chụp màn hình để lưu ảnh.</p>
-</div>
+<div id="toast">Giao diện đã ẩn. Hãy chụp màn hình!</div>
 
 <script>
     const canvas = document.getElementById('ui-canvas');
@@ -97,66 +102,74 @@
 
     function closeIntro() {
         document.getElementById('v-intro').pause();
-        document.getElementById('intro-overlay').style.opacity = '0';
-        setTimeout(() => document.getElementById('intro-overlay').remove(), 500);
+        document.getElementById('intro-overlay').style.display = 'none';
     }
+
+    function toggleAI() { document.getElementById('ai-menu').classList.toggle('show'); }
 
     function switchTab(t) {
         const f = document.getElementById('vr-frame');
         f.src = t === 'vr' ? "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" : "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb";
     }
 
-    function toggleAI() { document.getElementById('ai-menu').classList.toggle('show'); }
-
-    // HÀM NÉN ẢNH ĐỂ CHỐNG LỖI BỘ NHỚ
-    function compressImg(file) {
-        return new Promise((res) => {
-            const r = new FileReader();
-            r.readAsDataURL(file);
-            r.onload = (e) => {
-                const i = new Image();
-                i.src = e.target.result;
-                i.onload = () => {
-                    const c = document.createElement('canvas');
-                    const max = 800; // Giới hạn 800px để cực nhẹ cho AI
-                    let w = i.width, h = i.height;
-                    if (w > max) { h *= max/w; w = max; }
-                    c.width = w; c.height = h;
-                    c.getContext('2d').drawImage(i, 0, 0, w, h);
-                    c.toBlob((b) => res(b), 'image/jpeg', 0.8);
-                }
-            }
-        });
-    }
-
-    async function processLocalAI(input) {
+    // --- HÀM QUAN TRỌNG: NÉN ẢNH TRƯỚC KHI TÁCH NỀN ---
+    async function handleImageUpload(input) {
         if (!input.files[0]) return;
-        document.getElementById('loading').style.display = 'flex';
-        
+        const loading = document.getElementById('loading');
+        loading.style.display = 'flex';
+
         try {
-            const smallFile = await compressImg(input.files[0]);
-            const blob = await imglyRemoveBackground(smallFile, { 
-                publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.0.3/dist/' 
-            });
+            // 1. Nén ảnh xuống tối đa 800px để tránh tràn RAM
+            const compressedBlob = await compressImage(input.files[0], 800);
             
-            const url = URL.createObjectURL(blob);
+            // 2. Chạy AI tách nền trên file đã nén
+            const resultBlob = await imglyRemoveBackground(compressedBlob, {
+                publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.0.3/dist/',
+                progress: (p) => console.log(`Processing: ${Math.round(p * 100)}%`)
+            });
+
+            // 3. Hiển thị kết quả lên Canvas
+            const url = URL.createObjectURL(resultBlob);
             const img = new Image();
             img.onload = () => {
                 userImg = img;
+                const ratio = img.width / img.height;
                 imgPos.h = canvas.height * 0.6;
-                imgPos.w = imgPos.h * (img.width/img.height);
-                imgPos.x = (canvas.width - imgPos.w)/2;
+                imgPos.w = imgPos.h * ratio;
+                imgPos.x = (canvas.width - imgPos.w) / 2;
                 imgPos.y = canvas.height - imgPos.h - 50;
-                document.getElementById('loading').style.display = 'none';
+                
+                loading.style.display = 'none';
                 document.getElementById('edit-area').style.display = 'block';
                 canvas.classList.add('canvas-active');
                 draw();
             };
             img.src = url;
-        } catch (e) {
-            alert("Lỗi: Thiết bị hết bộ nhớ. Hãy thử ảnh khác nhẹ hơn!");
-            document.getElementById('loading').style.display = 'none';
+        } catch (error) {
+            console.error(error);
+            alert("Lỗi: Máy không đủ bộ nhớ. Hãy thử ảnh khác hoặc khởi động lại trình duyệt!");
+            loading.style.display = 'none';
         }
+    }
+
+    function compressImage(file, maxSide) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvasTmp = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > h && w > maxSide) { h *= maxSide / w; w = maxSide; }
+                    else if (h > maxSide) { w *= maxSide / h; h = maxSide; }
+                    canvasTmp.width = w; canvasTmp.height = h;
+                    canvasTmp.getContext('2d').drawImage(img, 0, 0, w, h);
+                    canvasTmp.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+                };
+            };
+        });
     }
 
     function draw() {
@@ -166,12 +179,16 @@
         ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
     }
 
-    function hideMode() {
+    function hideUI() {
         document.getElementById('main-ui').style.display = 'none';
         document.getElementById('toast').style.display = 'block';
-        setTimeout(() => { document.getElementById('toast').style.display = 'none'; document.getElementById('main-ui').style.display = 'block'; }, 6000);
+        setTimeout(() => { 
+            document.getElementById('toast').style.display = 'none'; 
+            document.getElementById('main-ui').style.display = 'block'; 
+        }, 5000);
     }
 
+    // Touch & Mouse Handling
     function start(e) {
         const p = e.touches ? e.touches[0] : e;
         isDragging = true; startX = p.clientX - imgPos.x; startY = p.clientY - imgPos.y;
@@ -183,9 +200,9 @@
         draw();
     }
     canvas.addEventListener('mousedown', start);
-    canvas.addEventListener('touchstart', start, {passive:false});
+    canvas.addEventListener('touchstart', start, {passive: false});
     window.addEventListener('mousemove', move);
-    window.addEventListener('touchmove', move, {passive:false});
+    window.addEventListener('touchmove', move, {passive: false});
     window.addEventListener('mouseup', () => isDragging = false);
     window.addEventListener('touchend', () => isDragging = false);
 </script>
