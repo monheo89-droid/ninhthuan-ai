@@ -266,3 +266,59 @@
         } catch (error) {
             console.error(error);
             alert("Lỗi: Máy không đủ bộ nhớ hoặc ảnh quá nặng. Hãy thử ảnh khác nhẹ hơn!");
+            loading.style.display = 'none';
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!userImg) return;
+        const s = document.getElementById('size-slider').value;
+        ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
+    }
+
+    // --- 6. CHẾ ĐỘ CHỤP ẢNH ---
+    function hideMode() {
+        document.getElementById('main-ui').style.display = 'none';
+        document.getElementById('toast').style.display = 'block';
+        setTimeout(() => { document.getElementById('toast').style.display = 'none'; }, 3000);
+        setTimeout(() => { document.getElementById('main-ui').style.display = 'block'; }, 8000);
+    }
+
+    // --- 7. KÉO THẢ (TOUCH & MOUSE) ---
+    function handleStart(e) {
+        if (!userImg) return;
+        const pos = e.touches ? e.touches[0] : e;
+        const s = document.getElementById('size-slider').value;
+        if (pos.clientX >= imgPos.x && pos.clientX <= imgPos.x + imgPos.w * s &&
+            pos.clientY >= imgPos.y && pos.clientY <= imgPos.y + imgPos.h * s) {
+            isDragging = true;
+            startX = pos.clientX - imgPos.x;
+            startY = pos.clientY - imgPos.y;
+        }
+    }
+
+    function handleMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        const pos = e.touches ? e.touches[0] : e;
+        imgPos.x = pos.clientX - startX;
+        imgPos.y = pos.clientY - startY;
+        draw();
+    }
+
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('touchstart', handleStart, {passive: false});
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', handleMove, {passive: false});
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('touchend', () => isDragging = false);
+    
+    window.onresize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        draw();
+    };
+</script>
+</body>
+</html>
