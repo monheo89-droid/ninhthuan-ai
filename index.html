@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ninh Thuận AI - Mobile Fixed</title>
+    <title>Ninh Thuận AI - Mobile Experience</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
@@ -15,31 +15,38 @@
         
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; font-family: system-ui, -apple-system, sans-serif; 
+            overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; 
             background: #000;
         }
 
-        /* --- 1. INTRO LAYER --- */
+        /* --- 1. VIDEO INTRO LAYER --- */
         #intro-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: #000; z-index: 99999; display: flex; align-items: center; justify-content: center; 
+            transition: opacity 0.5s ease;
         }
         #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
-        .skip-btn {
-            position: absolute; top: 40px; right: 20px; 
-            background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; 
-            border-radius: 30px; border: 1px solid #fff; font-weight: bold;
+        
+        /* Nút bắt đầu tham quan theo yêu cầu */
+        .start-btn {
+            position: absolute; bottom: 20%; 
+            background: var(--primary); color: #fff; padding: 15px 25px; 
+            border-radius: 40px; border: 2px solid #fff; font-weight: bold;
+            font-size: 16px; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite; cursor: pointer;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
-        /* --- 2. VR IFRAME --- */
-        .pano-page { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            visibility: hidden; z-index: 1; 
-        }
+        /* --- 2. HỆ THỐNG IFRAME --- */
+        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
         .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- 3. ĐIỀU HƯỚNG --- */
+        /* --- 3. ĐIỀU HƯỚNG TỐI ƯU MOBILE (Tránh bị che) --- */
         .top-btns { 
             position: absolute; top: 25px; left: 20px;
             z-index: 9999; display: flex; flex-direction: column; gap: 12px; 
@@ -48,14 +55,14 @@
             width: 48px; height: 48px; background: var(--primary); color: white;
             border: none; border-radius: 50%; cursor: pointer; font-size: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
-            border: 2px solid #fff;
+            border: 2px solid #fff; -webkit-tap-highlight-color: transparent;
         }
         .round-btn.active { background: #fff; color: var(--primary); transform: scale(1.1); }
         .round-btn.cart { background: var(--success); }
 
         /* --- 4. STUDIO AI --- */
         .controls { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 85%; max-width: 320px; z-index: 10000; background: var(--glass); 
             padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             transition: 0.3s;
@@ -65,10 +72,7 @@
 
         #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
 
-        /* Nút Tải Ảnh */
         .label-btn { display: block; padding: 15px; background: var(--primary); color: white; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
-        
-        /* Nút Lưu */
         .btn-save { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; color: white; background: var(--success); cursor: pointer; }
 
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 100000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
@@ -76,13 +80,13 @@
 </head>
 <body>
 
-<div id="loading"><p>ĐANG TÁCH NỀN...</p></div>
+<div id="loading"><p>ĐANG XỬ LÝ...</p></div>
 
 <div id="intro-overlay" onclick="killIntro()">
     <video id="v-intro" autoplay muted loop playsinline>
         <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
     </video>
-    <div class="skip-btn">Bỏ qua ✕</div>
+    <div class="start-btn">Mời bạn bắt đầu tham quan</div>
 </div>
 
 <div class="top-btns">
@@ -142,13 +146,13 @@
         if (intro) { 
             document.getElementById('v-intro').pause();
             intro.style.opacity = '0'; 
-            setTimeout(() => intro.remove(), 500); 
+            setTimeout(() => intro.remove(), 500);
         }
     }
 
     function toggleAI() { 
         killIntro();
-        document.getElementById('ai-menu').classList.toggle('hidden'); 
+        document.getElementById('ai-menu').classList.toggle('hidden');
     }
 
     async function initAI(input) {
@@ -166,13 +170,12 @@
             img.onload = () => {
                 userImg = img;
                 document.getElementById('loading').style.display = "none";
-                document.getElementById('edit-area').style.display = "block"; // HIỆN THANH TRƯỢT KHI XONG
+                document.getElementById('edit-area').style.display = "block";
                 render();
             };
             img.src = URL.createObjectURL(blob);
         } catch (e) { 
-            alert("Lỗi kết nối hoặc hết lượt API");
-            document.getElementById('loading').style.display = "none"; 
+            document.getElementById('loading').style.display = "none";
         }
     }
 
