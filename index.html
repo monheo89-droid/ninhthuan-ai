@@ -2,77 +2,73 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Fixed Screenshot</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ninh Thuận AI - Fix Di Chuyển & Chụp Ảnh</title>
     <style>
-        :root { --primary: #ff9800; --glass: rgba(255, 255, 255, 0.85); --success: #27ae60; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
+        :root { --primary: #ff9800; --success: #27ae60; --glass: rgba(255, 255, 255, 0.95); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
 
-        /* --- LỚP NỀN DỰ PHÒNG KHI CHỤP --- */
-        #capture-placeholder {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; display: none; object-fit: cover;
-        }
-
-        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
-        .pano-page.active { visibility: visible; z-index: 10; }
+        /* Lớp VR */
+        .pano-page { position: absolute; inset: 0; visibility: hidden; z-index: 1; }
+        .pano-page.active { visibility: visible; z-index: 5; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
-        #ui-canvas.moving { pointer-events: auto; } /* Cho phép kéo người */
-
-        .top-btns { position: absolute; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 12px; }
-        .round-btn {
-            width: 45px; height: 45px; background: var(--primary); color: white;
-            border: none; border-radius: 50%; cursor: pointer; font-size: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+        /* Canvas Nhân vật - Quan trọng để sửa lỗi đơ di chuyển */
+        #ui-canvas { 
+            position: absolute; inset: 0; 
+            z-index: 10; /* Mặc định dưới các nút bấm nhưng trên iframe */
+            pointer-events: none; /* Cho phép xuyên qua để xoay VR */
+            touch-action: none;
+        }
+        #ui-canvas.mode-active { 
+            pointer-events: auto; /* Kích hoạt để di chuyển người */
+            z-index: 99999; 
         }
 
-        .controls { 
-            position: absolute; top: 75px; left: 20px; z-index: 9000; width: 280px; 
-            background: var(--glass); padding: 20px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-        }
-        .controls.hidden { display: none; }
+        /* Giao diện nút bấm */
+        .ui-sidebar { position: absolute; top: 20px; left: 15px; z-index: 100000; display: flex; flex-direction: column; gap: 12px; }
+        .round-btn { width: 50px; height: 50px; background: var(--primary); color: white; border: 2px solid #fff; border-radius: 50%; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        .label-btn { display: block; padding: 12px; background: var(--primary); color: white; border-radius: 10px; cursor: pointer; text-align: center; font-weight: bold; margin-bottom: 10px; }
-        .btn-save { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; background: var(--success); }
-        .btn-move { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid var(--primary); border-radius: 5px; cursor: pointer; background: white; }
-        .btn-move.active { background: var(--primary); color: white; }
+        #ai-menu { 
+            position: absolute; top: 80px; left: 15px; width: 260px; 
+            background: var(--glass); padding: 20px; border-radius: 20px; 
+            z-index: 100000; box-shadow: 0 10px 30px rgba(0,0,0,0.4); 
+            transition: 0.3s; 
+        }
+        #ai-menu.hidden { display: none; }
+
+        .label-btn { display: block; padding: 12px; background: var(--primary); color: white; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        .mode-toggle { width: 100%; padding: 12px; margin-top: 10px; border: 2px solid var(--primary); border-radius: 10px; background: white; font-weight: bold; cursor: pointer; }
+        .mode-toggle.active { background: var(--success); color: white; }
+        
+        #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200000; display: none; align-items: center; justify-content: center; color: white; }
     </style>
 </head>
 <body>
 
-<div id="loading"><p>ĐANG XỬ LÝ...</p></div>
+<div id="loading"><p>ĐANG LƯU ẢNH...</p></div>
 
-<img id="capture-placeholder" src="https://monheo89-droid.github.io/ninhthuan-ai/images/bg-capture.jpg" crossorigin="anonymous">
-
-<div class="top-btns">
+<div class="ui-sidebar">
     <button class="round-btn" onclick="switchTab('vr')">🏠</button>
     <button class="round-btn" style="background:var(--success)" onclick="switchTab('shop')">🛒</button>
     <button class="round-btn" onclick="toggleAI()">📸</button>
 </div>
 
-<div id="page-vr" class="pano-page active">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-</div>
-<div id="page-shop" class="pano-page">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
-</div>
-
-<div class="controls hidden" id="ai-menu">
-    <h2 style="text-align: center; margin: 0 0 15px 0; font-size: 18px;">STUDIO AI</h2>
+<div id="ai-menu" class="hidden">
+    <h3 style="text-align:center; margin-top:0;">STUDIO AI</h3>
     <label for="input-file" class="label-btn">TẢI ẢNH NGƯỜI</label>
     <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
     
-    <div id="edit-area" style="display: none; margin-top:15px;">
-        <button id="move-toggle" class="btn-move" onclick="toggleMove()">CHẾ ĐỘ: DI CHUYỂN NGƯỜI</button>
-        <p style="font-size: 12px; margin: 5px 0;">Kích thước:</p>
-        <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="1.0" style="width:100%;" oninput="render()">
-        <button class="btn-save" style="margin-top: 15px;" onclick="safeCapture()">LƯU ẢNH CHECK-IN</button>
+    <div id="edit-area" style="display: none;">
+        <button id="btn-mode" class="mode-toggle" onclick="toggleMoveMode()">CHẾ ĐỘ: XOAY CẢNH</button>
+        <p style="font-size:12px; margin: 15px 0 5px;">Kích thước:</p>
+        <input type="range" id="size-slider" min="0.2" max="2.5" step="0.01" value="1.0" oninput="render()" style="width:100%;">
+        <button onclick="fastCapture()" style="width:100%; padding:14px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold; margin-top:15px;">LƯU ẢNH (KHÔNG TREO)</button>
     </div>
 </div>
+
+<div id="page-vr" class="pano-page active"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe></div>
+<div id="page-shop" class="pano-page"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe></div>
 
 <canvas id="ui-canvas"></canvas>
 
@@ -80,27 +76,37 @@
     const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC";
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
+    
+    // Ảnh nền cố định để tránh nền đen từ Iframe
+    const BG_URL = "https://monheo89-droid.github.io/ninhthuan-ai/images/bg-capture.jpg";
     let userImg = null, imgPos = { x: 0, y: 0, w: 0, h: 0 };
-    let isDragging = false, offset = { x: 0, y: 0 }, moveEnabled = false;
+    let isDragging = false, offset = { x: 0, y: 0 }, moveMode = false;
 
-    window.onload = () => { 
-        canvas.width = window.innerWidth; 
-        canvas.height = window.innerHeight; 
-    };
+    window.onload = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
 
     function switchTab(tab) {
         document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
         document.getElementById('page-' + tab).classList.add('active');
+        disableMoveMode();
     }
 
     function toggleAI() { document.getElementById('ai-menu').classList.toggle('hidden'); }
 
-    function toggleMove() {
-        moveEnabled = !moveEnabled;
-        const btn = document.getElementById('move-toggle');
-        canvas.classList.toggle('moving', moveEnabled);
-        btn.classList.toggle('active', moveEnabled);
-        btn.innerText = moveEnabled ? "CHẾ ĐỘ: ĐANG DI CHUYỂN" : "CHẾ ĐỘ: XOAY CẢNH VR";
+    function toggleMoveMode() {
+        moveMode = !moveMode;
+        const btn = document.getElementById('btn-mode');
+        if (moveMode) {
+            btn.innerText = "CHẾ ĐỘ: DI CHUYỂN NGƯỜI";
+            btn.classList.add('active');
+            canvas.classList.add('mode-active');
+        } else { disableMoveMode(); }
+    }
+
+    function disableMoveMode() {
+        moveMode = false;
+        const btn = document.getElementById('btn-mode');
+        if(btn) { btn.innerText = "CHẾ ĐỘ: XOAY CẢNH"; btn.classList.remove('active'); }
+        canvas.classList.remove('mode-active');
     }
 
     async function initAI(input) {
@@ -109,15 +115,13 @@
         const formData = new FormData();
         formData.append("image_file", input.files[0]);
         try {
-            const res = await fetch("https://api.remove.bg/v1.0/removebg", { 
-                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData 
-            });
+            const res = await fetch("https://api.remove.bg/v1.0/removebg", { method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData });
             const blob = await res.blob();
             const img = new Image();
             img.onload = () => {
                 userImg = img;
                 const ratio = img.width / img.height;
-                imgPos.h = 450; imgPos.w = 450 * ratio; // Giữ thông số gốc của bạn
+                imgPos.h = 450; imgPos.w = 450 * ratio; // Thông số từ tab+ng.py
                 imgPos.x = (canvas.width - imgPos.w) / 2;
                 imgPos.y = canvas.height - imgPos.h - 50;
                 document.getElementById('loading').style.display = "none";
@@ -130,50 +134,58 @@
 
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const s = document.getElementById('size-slider').value;
-        if (userImg) ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
+        if (userImg) {
+            const s = document.getElementById('size-slider').value;
+            ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
+        }
     }
 
-    // --- LOGIC DI CHUYỂN NGƯỜI ---
-    canvas.onmousedown = (e) => {
-        if(!moveEnabled) return;
-        isDragging = true;
-        offset.x = e.clientX - imgPos.x;
-        offset.y = e.clientY - imgPos.y;
-    };
-    window.onmousemove = (e) => {
-        if(isDragging && moveEnabled) {
-            imgPos.x = e.clientX - offset.x;
-            imgPos.y = e.clientY - offset.y;
+    // Xử lý di chuyển mượt mà trên Mobile
+    function getPos(e) { return { x: e.touches ? e.touches[0].clientX : e.clientX, y: e.touches ? e.touches[0].clientY : e.clientY }; }
+    
+    canvas.addEventListener('touchstart', (e) => {
+        if (!userImg || !moveMode) return;
+        const pos = getPos(e);
+        const s = document.getElementById('size-slider').value;
+        if (pos.x >= imgPos.x && pos.x <= imgPos.x + imgPos.w * s && pos.y >= imgPos.y && pos.y <= imgPos.y + imgPos.h * s) {
+            isDragging = true;
+            offset.x = pos.x - imgPos.x; offset.y = pos.y - imgPos.y;
+        }
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (isDragging) {
+            e.preventDefault();
+            const pos = getPos(e);
+            imgPos.x = pos.x - offset.x;
+            imgPos.y = pos.y - offset.y;
             render();
         }
-    };
-    window.onmouseup = () => isDragging = false;
+    }, { passive: false });
 
-    // --- HÀM CHỤP ẢNH AN TOÀN (FIX NỀN ĐEN) ---
-    function safeCapture() {
-        const placeholder = document.getElementById('capture-placeholder');
-        const uiMenu = document.getElementById('ai-menu');
-        const topBtns = document.querySelector('.top-btns');
+    window.addEventListener('touchend', () => isDragging = false);
 
-        // 1. Hiện ảnh nền mồi và ẩn UI
-        placeholder.style.display = 'block';
-        uiMenu.style.visibility = 'hidden';
-        topBtns.style.visibility = 'hidden';
+    // HÀM CHỤP ẢNH TỐC ĐỘ CAO - KHÔNG TREO MÁY
+    function fastCapture() {
+        document.getElementById('loading').style.display = "flex";
+        const snapshot = document.createElement('canvas');
+        snapshot.width = canvas.width;
+        snapshot.height = canvas.height;
+        const sctx = snapshot.getContext('2d');
 
-        setTimeout(() => {
-            html2canvas(document.body, { useCORS: true }).then(c => {
-                const a = document.createElement('a');
-                a.download = 'ninh-thuan-checkin.png';
-                a.href = c.toDataURL();
-                a.click();
-
-                // 2. Khôi phục lại trạng thái cũ
-                placeholder.style.display = 'none';
-                uiMenu.style.visibility = 'visible';
-                topBtns.style.visibility = 'visible';
-            });
-        }, 100);
+        const bg = new Image();
+        bg.crossOrigin = "anonymous";
+        bg.onload = () => {
+            sctx.drawImage(bg, 0, 0, snapshot.width, snapshot.height);
+            sctx.drawImage(canvas, 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = 'ninh-thuan-ai.png';
+            link.href = snapshot.toDataURL("image/png");
+            link.click();
+            document.getElementById('loading').style.display = "none";
+        };
+        bg.src = BG_URL;
     }
 </script>
 </body>
