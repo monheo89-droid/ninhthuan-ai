@@ -2,436 +2,533 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI Tour - Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Ninh Thuan AI Tour - Professional Edition</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        :root { 
-            --primary: #ff9800; 
-            --glass: rgba(20, 20, 20, 0.85); /* Đổi sang màu tối cho sang trọng */
-            --text-light: #ffffff;
-            --success: #27ae60;
-            --danger: #e74c3c;
+        /* --- CORE RESET & VARS --- */
+        :root {
+            --bg-dark: #0f0f0f;
+            --panel-bg: rgba(28, 28, 30, 0.95);
+            --accent: #FF6B00; /* Cam cháy sang trọng */
+            --accent-hover: #ff8533;
+            --text-main: #ffffff;
+            --text-sub: #8e8e93;
+            --danger: #ff453a;
+            --safe-area-top: env(safe-area-inset-top);
+            --safe-area-bottom: env(safe-area-inset-bottom);
         }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
         
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #000; touch-action: none; /* Chặn cuộn trang khi kéo thả */ }
-
-        /* --- 1. VIDEO INTRO --- */
-        #intro-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
-            transition: opacity 0.5s;
-        }
-        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
-        .skip-btn {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            padding: 10px 25px; border: 1px solid white; color: white; background: rgba(0,0,0,0.5);
-            border-radius: 20px; cursor: pointer; z-index: 10000;
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #000; font-family: 'Inter', sans-serif;
+            overflow: hidden; touch-action: none; user-select: none;
         }
 
-        /* --- 2. HỆ THỐNG VIEW --- */
-        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
-        .pano-page.active { visibility: visible; z-index: 5; }
-        iframe { width: 100%; height: 100%; border: none; }
+        /* --- LAYOUT LAYERS --- */
+        #layer-vr { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #layer-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        
+        /* Iframe Fullscreen */
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+        .tab-content { display: none; width: 100%; height: 100%; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s ease; }
 
-        /* Canvas đè lên trên iframe để vẽ nhân vật */
-        #ui-canvas { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 50; touch-action: none; cursor: grab;
-        }
-        #ui-canvas:active { cursor: grabbing; }
-
-        /* --- 3. GIAO DIỆN ĐIỀU KHIỂN --- */
+        /* --- UI COMPONENTS --- */
+        
+        /* 1. Top Bar (Navigation) */
         .top-bar {
-            position: absolute; top: 20px; left: 20px; right: 20px;
-            z-index: 100; display: flex; justify-content: space-between; pointer-events: none;
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: calc(15px + var(--safe-area-top)) 20px 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; pointer-events: none;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
         }
-        .nav-group { pointer-events: auto; display: flex; gap: 10px; }
-
-        .round-btn {
-            width: 45px; height: 45px; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);
-            color: white; border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 50%; cursor: pointer; font-size: 18px;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        .round-btn.active { background: var(--primary); border-color: var(--primary); transform: scale(1.1); }
-        .round-btn:active { transform: scale(0.95); }
-
-        /* MENU AI STUDIO */
-        .ai-controls { 
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; z-index: 200;
-            background: var(--glass); backdrop-filter: blur(15px);
-            padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
-            color: white; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .ai-controls.hidden { transform: translate(-50%, 150%); opacity: 0; pointer-events: none; }
-
-        .control-row { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-action { 
-            flex: 1; padding: 12px; border: none; border-radius: 12px; 
-            font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 14px; transition: 0.2s;
-        }
-        .btn-upload { background: #3498db; color: white; }
-        .btn-save { background: var(--success); color: white; }
-        .btn-bg { background: var(--primary); color: white; }
-
-        /* --- LOADING & NOTIFICATIONS --- */
-        #loading { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.85); z-index: 20000; 
-            display: none; flex-direction: column; align-items: center; justify-content: center; color: white; 
-        }
-        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
         
-        .toast {
-            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px;
-            z-index: 30000; opacity: 0; transition: 0.3s; pointer-events: none; font-size: 14px;
+        .nav-pill {
+            pointer-events: auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 100px; padding: 4px; display: flex; gap: 5px; border: 1px solid rgba(255,255,255,0.1);
         }
+        
+        .nav-btn {
+            border: none; background: transparent; color: var(--text-sub);
+            padding: 8px 16px; border-radius: 100px; font-weight: 600; font-size: 13px;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .nav-btn.active { background: var(--text-main); color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        
+        .action-btn {
+            pointer-events: auto; width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2); color: white;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .action-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.3); }
 
-        /* Hướng dẫn thao tác */
-        .tutorial-hint {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            pointer-events: none; color: white; text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8); opacity: 0; transition: 0.5s;
+        /* 2. Bottom Toolbar (Editor) */
+        .editor-panel {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: var(--panel-bg);
+            border-top-left-radius: 24px; border-top-right-radius: 24px;
+            padding: 20px 20px calc(20px + var(--safe-area-bottom));
+            z-index: 100; transform: translateY(120%); transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 15px;
         }
-        .hand-icon { font-size: 40px; animation: wave 2s infinite; display: block; margin-bottom: 10px;}
-        @keyframes wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(20px); } }
+        .editor-panel.visible { transform: translateY(0); }
+
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .panel-title { font-size: 14px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        
+        .tool-item {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.05); padding: 12px 0; border-radius: 12px;
+            color: var(--text-main); cursor: pointer; transition: 0.2s;
+        }
+        .tool-item:active { background: rgba(255,255,255,0.15); transform: scale(0.98); }
+        .tool-item i { font-size: 20px; margin-bottom: 2px; }
+        .tool-item span { font-size: 11px; font-weight: 500; }
+        .tool-item.primary { background: var(--accent); color: white; }
+
+        /* 3. Loading Overlay */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .spinner-pro {
+            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 0.8s ease-in-out infinite;
+        }
+        .loading-text { margin-top: 15px; color: white; font-size: 14px; letter-spacing: 0.5px; }
+
+        /* Animation */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Helper Classes */
+        .hidden { display: none !important; }
+        .hide-ui .top-bar, .hide-ui .editor-panel { opacity: 0; pointer-events: none; }
+
+        /* Tutorial Gesture Hint */
+        .gesture-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 90; pointer-events: none; opacity: 0; transition: 0.5s;
+            text-align: center; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .gesture-hint i { font-size: 48px; margin-bottom: 10px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
 
     </style>
 </head>
 <body>
 
-<div id="loading">
-    <div class="spinner"></div>
-    <p style="margin-top: 15px; font-weight: bold;" id="loading-text">AI ĐANG TÁCH NỀN...</p>
-</div>
-
-<div id="toast" class="toast">Thông báo</div>
-
-<div id="intro-overlay">
-    <video id="v-intro" autoplay muted loop playsinline>
-        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
-    </video>
-    <div class="skip-btn" onclick="killIntro()">BẮT ĐẦU TRẢI NGHIỆM <i class="fas fa-arrow-right"></i></div>
+<div id="loader">
+    <div class="spinner-pro"></div>
+    <div class="loading-text" id="loader-msg">Đang xử lý AI...</div>
 </div>
 
 <div class="top-bar">
-    <div class="nav-group">
-        <button class="round-btn active" id="btn-vr" onclick="switchTab('vr')" title="VR Tour"><i class="fas fa-vr-cardboard"></i></button>
-        <button class="round-btn" id="btn-shop" onclick="switchTab('shop')" title="Gian hàng"><i class="fas fa-shopping-bag"></i></button>
+    <div class="nav-pill">
+        <button class="nav-btn active" onclick="App.switchTab('vr')">VR Tour</button>
+        <button class="nav-btn" onclick="App.switchTab('shop')">Gian Hàng</button>
     </div>
-    <div class="nav-group">
-        <button class="round-btn" onclick="toggleAI()" style="background: var(--primary); border:none;"><i class="fas fa-magic"></i> AI</button>
+    <div style="display: flex; gap: 10px;">
+        <button class="action-btn" onclick="App.toggleUI()" title="Chế độ xem (Ẩn UI)"><i class="fas fa-eye"></i></button>
+        <button class="action-btn" onclick="App.toggleEditor()" style="background: var(--accent); border-color: var(--accent);"><i class="fas fa-magic"></i></button>
     </div>
 </div>
 
-<div id="page-vr" class="pano-page active">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" allowfullscreen></iframe>
-</div>
-
-<div id="page-shop" class="pano-page">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb" allowfullscreen></iframe>
+<div id="layer-vr">
+    <div id="tab-vr" class="tab-content active">
+        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" allow="accelerometer; gyroscope; magnetometer"></iframe>
+    </div>
+    <div id="tab-shop" class="tab-content">
+        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
+    </div>
 </div>
 
 <canvas id="ui-canvas"></canvas>
 
-<div id="tutorial" class="tutorial-hint">
-    <i class="fas fa-hand-pointer hand-icon"></i>
-    <p>Dùng 1 ngón để di chuyển<br>Dùng 2 ngón để phóng to/thu nhỏ</p>
+<div id="gesture-hint" class="gesture-hint">
+    <i class="fas fa-hand-pointer"></i>
+    <p>Chạm để di chuyển<br>Hai ngón để xoay & phóng to</p>
 </div>
 
-<div class="ai-controls hidden" id="ai-menu">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3 style="margin:0; font-size:16px;">📸 STUDIO ẢO</h3>
-        <i class="fas fa-times" onclick="toggleAI()" style="cursor:pointer; padding:5px;"></i>
+<div class="editor-panel" id="editor">
+    <div class="panel-header">
+        <span class="panel-title">AI Studio</span>
+        <i class="fas fa-chevron-down" style="color:white; padding: 10px; cursor: pointer;" onclick="App.toggleEditor()"></i>
     </div>
     
-    <div class="control-row">
-        <button class="btn-action btn-upload" onclick="document.getElementById('input-file').click()">
-            <i class="fas fa-user-plus"></i> Tải ảnh người
-        </button>
-        <button class="btn-action btn-bg" onclick="document.getElementById('input-bg').click()">
-            <i class="fas fa-image"></i> Đổi nền thiếp
-        </button>
-    </div>
-    
-    <div class="control-row" id="save-area" style="opacity: 0.5; pointer-events: none;">
-        <button class="btn-action btn-save" onclick="savePostcard()">
-            <i class="fas fa-download"></i> Lưu Bưu Thiếp
-        </button>
-    </div>
+    <div class="tools-grid">
+        <input type="file" id="inp-user" accept="image/*" hidden onchange="AIProcessor.handleInput(this)">
+        <input type="file" id="inp-bg" accept="image/*" hidden onchange="Editor.setBackground(this)">
 
-    <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="processAI(this)">
-    <input type="file" id="input-bg" accept="image/*" style="display: none;" onchange="changeBackground(this)">
-    
-    <p style="font-size: 11px; margin-top: 10px; color: #aaa; text-align: center;">*Lưu ý: Để ảnh đẹp nhất với VR, hãy dùng chức năng Chụp màn hình của điện thoại.</p>
+        <div class="tool-item primary" onclick="document.getElementById('inp-user').click()">
+            <i class="fas fa-user-plus"></i>
+            <span>Thêm Người</span>
+        </div>
+        
+        <div class="tool-item" onclick="Editor.flipCharacter()">
+            <i class="fas fa-exchange-alt"></i>
+            <span>Lật Ảnh</span>
+        </div>
+
+        <div class="tool-item" onclick="document.getElementById('inp-bg').click()">
+            <i class="far fa-image"></i>
+            <span>Đổi Nền</span>
+        </div>
+
+        <div class="tool-item" onclick="Editor.saveImage()">
+            <i class="fas fa-download"></i>
+            <span>Lưu Ảnh</span>
+        </div>
+    </div>
+    <div style="text-align: center; color: var(--text-sub); font-size: 10px; margin-top: 5px;">
+        Mẹo: Ẩn giao diện (nút con mắt) rồi chụp màn hình điện thoại để có ảnh VR đẹp nhất.
+    </div>
 </div>
 
 <script>
-    // --- CẤU HÌNH ---
-    const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC"; // Lưu ý: API Key Free có giới hạn.
+/**
+ * PROFESSIONAL JS ARCHITECTURE
+ * Module 1: State Management
+ * Module 2: AI Processing (RemoveBG)
+ * Module 3: Canvas Rendering & Transformations
+ * Module 4: Input Handling (Multi-touch)
+ * Module 5: App Logic
+ */
+
+const CONFIG = {
+    API_KEY: "FtyKLHXkG5By3gFBCBcoTACC", // Thay bằng key xịn của bạn
+    MAX_SCALE: 3.0,
+    MIN_SCALE: 0.2
+};
+
+// --- CLASS: STATE MANAGEMENT ---
+class Store {
+    constructor() {
+        this.img = null; // Character Image
+        this.bg = null;  // Background Image (Optional)
+        this.x = 0; this.y = 0;
+        this.scale = 1;
+        this.rotation = 0; // Đơn vị: radian
+        this.isFlipped = false;
+        this.canvas = document.getElementById('ui-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+    }
     
-    // --- BIẾN TOÀN CỤC ---
-    const canvas = document.getElementById('ui-canvas');
-    const ctx = canvas.getContext('2d');
-    
-    let appState = {
-        characterImg: null, // Ảnh nhân vật sau khi tách nền
-        bgImg: null,        // Ảnh nền tùy chỉnh (nếu có)
-        x: 0, y: 0,         // Vị trí nhân vật
-        scale: 1,           // Độ zoom nhân vật
-        isDragging: false,
-        lastTouchDistance: 0,
-        startX: 0, startY: 0
-    };
-
-    // --- KHỞI TẠO ---
-    window.onload = () => { resizeCanvas(); };
-    window.onresize = resizeCanvas;
-
-    function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        drawCanvas();
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
     }
+}
 
-    // --- ĐIỀU HƯỚNG TAB ---
-    function switchTab(tab) {
-        killIntro();
-        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
-        
-        document.getElementById('page-' + tab).classList.add('active');
-        document.getElementById('btn-' + tab).classList.add('active');
-    }
+const store = new Store();
 
-    function killIntro() {
-        const intro = document.getElementById('intro-overlay');
-        if (intro) {
-            document.getElementById('v-intro').pause();
-            intro.style.opacity = 0;
-            setTimeout(() => intro.remove(), 500);
-        }
-    }
-
-    function toggleAI() {
-        killIntro();
-        document.getElementById('ai-menu').classList.toggle('hidden');
-    }
-
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.style.opacity = 1; t.style.top = '100px';
-        setTimeout(() => { t.style.opacity = 0; t.style.top = '80px'; }, 3000);
-    }
-
-    // --- XỬ LÝ ẢNH & AI ---
-    async function processAI(input) {
+// --- CLASS: AI PROCESSOR ---
+class AIProcessor {
+    static async handleInput(input) {
         if (!input.files[0]) return;
         
-        document.getElementById('loading').style.display = "flex";
-        document.getElementById('loading-text').innerText = "AI ĐANG TÁCH NỀN...";
-        
-        const formData = new FormData();
-        formData.append("image_file", input.files[0]);
+        App.showLoader(true, "AI đang tách nền...");
+        const file = input.files[0];
 
+        // Chiến thuật: Thử gọi API, nếu lỗi thì dùng ảnh gốc (Fallback)
         try {
-            const res = await fetch("https://api.remove.bg/v1.0/removebg", { 
-                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData 
+            const formData = new FormData();
+            formData.append("image_file", file);
+            
+            const res = await fetch("https://api.remove.bg/v1.0/removebg", {
+                method: "POST",
+                headers: { "X-Api-Key": CONFIG.API_KEY },
+                body: formData
             });
 
-            if (res.status === 402 || res.status === 403) {
-                throw new Error("Hết lượt miễn phí API hoặc Key lỗi.");
-            }
-            if (!res.ok) throw new Error("Lỗi kết nối Server.");
+            if (res.status === 402) throw new Error("Hết lượt miễn phí.");
+            if (!res.ok) throw new Error("Lỗi Server.");
 
             const blob = await res.blob();
-            createCharacter(blob);
-
-        } catch (e) {
-            console.error(e);
-            showToast("⚠️ Lỗi AI: " + e.message + " -> Dùng ảnh gốc.");
-            // Fallback: dùng ảnh gốc nếu lỗi API
-            createCharacter(input.files[0]);
+            await this.loadImage(blob);
+            
+        } catch (err) {
+            console.warn("AI Fail, using raw:", err);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Chế độ Offline',
+                text: 'Hệ thống AI đang bận hoặc hết lượt. Sẽ sử dụng ảnh gốc.',
+                toast: true, position: 'top', timer: 3000, showConfirmButton: false
+            });
+            await this.loadImage(file);
+        } finally {
+            App.showLoader(false);
+            // Reset state
+            store.scale = 1; store.rotation = 0; store.isFlipped = false;
+            // Center image
+            const ratio = store.img.width / store.img.height;
+            const h = store.canvas.height * 0.5;
+            store.scale = h / store.img.height;
+            store.x = store.canvas.width / 2;
+            store.y = store.canvas.height / 2 + 50;
+            
+            Editor.render();
+            App.showGestureHint();
         }
     }
 
-    function createCharacter(blobOrFile) {
-        const img = new Image();
-        img.onload = () => {
-            appState.characterImg = img;
-            // Reset vị trí về giữa màn hình
-            const ratio = img.width / img.height;
-            const targetHeight = canvas.height * 0.6; // Cao 60% màn hình
-            appState.scale = targetHeight / img.height; 
-            appState.x = (canvas.width - (img.width * appState.scale)) / 2;
-            appState.y = canvas.height - (img.height * appState.scale) - 50;
-            
-            document.getElementById('loading').style.display = "none";
-            document.getElementById('save-area').style.opacity = 1;
-            document.getElementById('save-area').style.pointerEvents = "auto";
-            
-            // Hiển thị hướng dẫn
-            document.getElementById('tutorial').style.opacity = 1;
-            setTimeout(() => { document.getElementById('tutorial').style.opacity = 0; }, 4000);
+    static loadImage(src) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                store.img = img;
+                resolve();
+            };
+            img.src = (src instanceof Blob || src instanceof File) ? URL.createObjectURL(src) : src;
+        });
+    }
+}
 
-            drawCanvas();
-        };
-        img.src = URL.createObjectURL(blobOrFile);
+// --- CLASS: EDITOR (RENDER & LOGIC) ---
+class Editor {
+    static render() {
+        const { ctx, canvas, img, bg, x, y, scale, rotation, isFlipped } = store;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw BG (Mode Bưu Thiếp)
+        if (bg) {
+            const bgRatio = Math.max(canvas.width / bg.width, canvas.height / bg.height);
+            const cx = (canvas.width - bg.width * bgRatio) / 2;
+            const cy = (canvas.height - bg.height * bgRatio) / 2;
+            ctx.drawImage(bg, cx, cy, bg.width * bgRatio, bg.height * bgRatio);
+        }
+
+        // 2. Draw Character
+        if (img) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.scale(isFlipped ? -scale : scale, scale);
+            
+            // Bóng đổ xịn
+            ctx.shadowColor = "rgba(0,0,0,0.4)";
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 15;
+
+            // Draw centered
+            ctx.drawImage(img, -img.width/2, -img.height/2);
+            ctx.restore();
+        }
     }
 
-    // Thay đổi ảnh nền (để tạo bưu thiếp)
-    function changeBackground(input) {
+    static flipCharacter() {
+        if (!store.img) return;
+        store.isFlipped = !store.isFlipped;
+        this.render();
+    }
+
+    static setBackground(input) {
         if (!input.files[0]) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-                appState.bgImg = img;
-                drawCanvas();
-                showToast("✅ Đã đổi nền bưu thiếp");
+                store.bg = img;
+                this.render();
+                Swal.fire({ icon: 'success', title: 'Đã đổi nền', toast: true, position: 'top', timer: 2000, showConfirmButton: false });
             };
             img.src = e.target.result;
         }
         reader.readAsDataURL(input.files[0]);
     }
 
-    // --- VẼ CANVAS (CORE LOOP) ---
-    function drawCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // 1. Vẽ nền tùy chỉnh (nếu có - dùng khi xuất bưu thiếp)
-        if (appState.bgImg) {
-            // Căn chỉnh cover (lấp đầy màn hình)
-            const ratio = Math.max(canvas.width / appState.bgImg.width, canvas.height / appState.bgImg.height);
-            const centerShift_x = (canvas.width - appState.bgImg.width * ratio) / 2;
-            const centerShift_y = (canvas.height - appState.bgImg.height * ratio) / 2;
-            ctx.drawImage(appState.bgImg, 0, 0, appState.bgImg.width, appState.bgImg.height,
-                          centerShift_x, centerShift_y, appState.bgImg.width * ratio, appState.bgImg.height * ratio);
-        }
-
-        // 2. Vẽ nhân vật
-        if (appState.characterImg) {
-            const w = appState.characterImg.width * appState.scale;
-            const h = appState.characterImg.height * appState.scale;
-            
-            // Đổ bóng nhẹ cho nhân vật để thật hơn
-            ctx.save();
-            ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 15;
-            ctx.shadowOffsetY = 10;
-            ctx.drawImage(appState.characterImg, appState.x, appState.y, w, h);
-            ctx.restore();
-            
-            // Vẽ khung bao quanh nếu đang chọn (option)
-            /* ctx.strokeStyle = "white";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(appState.x, appState.y, w, h);
-            */
-        }
-    }
-
-    // --- XỬ LÝ CẢM ỨNG (TOUCH & DRAG) ---
-    // Kiểm tra xem có chạm vào nhân vật không
-    function isHit(x, y) {
-        if (!appState.characterImg) return false;
-        const w = appState.characterImg.width * appState.scale;
-        const h = appState.characterImg.height * appState.scale;
-        return x >= appState.x && x <= appState.x + w && y >= appState.y && y <= appState.y + h;
-    }
-
-    // Mouse Events (PC)
-    canvas.addEventListener('mousedown', e => {
-        if (isHit(e.clientX, e.clientY)) {
-            appState.isDragging = true;
-            appState.startX = e.clientX - appState.x;
-            appState.startY = e.clientY - appState.y;
-        }
-    });
-    window.addEventListener('mousemove', e => {
-        if (appState.isDragging) {
-            appState.x = e.clientX - appState.startX;
-            appState.y = e.clientY - appState.startY;
-            requestAnimationFrame(drawCanvas);
-        }
-    });
-    window.addEventListener('mouseup', () => appState.isDragging = false);
-
-    // Touch Events (Mobile)
-    canvas.addEventListener('touchstart', e => {
-        if (e.touches.length === 1) {
-            // Kéo thả 1 ngón
-            const t = e.touches[0];
-            if (isHit(t.clientX, t.clientY)) {
-                appState.isDragging = true;
-                appState.startX = t.clientX - appState.x;
-                appState.startY = t.clientY - appState.y;
-            }
-        } else if (e.touches.length === 2) {
-            // Zoom 2 ngón
-            appState.isDragging = false;
-            appState.lastTouchDistance = getDistance(e.touches);
-        }
-    }, {passive: false});
-
-    canvas.addEventListener('touchmove', e => {
-        e.preventDefault(); // Chặn cuộn trang
-        if (e.touches.length === 1 && appState.isDragging) {
-            const t = e.touches[0];
-            appState.x = t.clientX - appState.startX;
-            appState.y = t.clientY - appState.startY;
-            requestAnimationFrame(drawCanvas);
-        } else if (e.touches.length === 2) {
-            const dist = getDistance(e.touches);
-            const delta = dist - appState.lastTouchDistance;
-            
-            // Giới hạn zoom
-            const newScale = appState.scale + (delta * 0.005);
-            if (newScale > 0.1 && newScale < 5.0) {
-                appState.scale = newScale;
-                // Cố gắng giữ tâm (đơn giản hóa: zoom tại chỗ hiện tại)
-                // Nâng cao: cần tính lại x,y để zoom vào giữa 2 ngón tay
-            }
-            appState.lastTouchDistance = dist;
-            requestAnimationFrame(drawCanvas);
-        }
-    }, {passive: false});
-
-    canvas.addEventListener('touchend', () => appState.isDragging = false);
-
-    function getDistance(touches) {
-        return Math.hypot(
-            touches[0].clientX - touches[1].clientX,
-            touches[0].clientY - touches[1].clientY
-        );
-    }
-
-    // --- LƯU ẢNH ---
-    function savePostcard() {
-        if (!appState.characterImg) return;
+    static saveImage() {
+        if (!store.img) return Swal.fire('Chưa có ảnh', 'Vui lòng chọn ảnh người trước.', 'info');
         
-        // Kiểm tra xem người dùng có đặt nền chưa
-        if (!appState.bgImg) {
-            const confirmSave = confirm("LƯU Ý: Do giới hạn bảo mật, hệ thống không thể chụp trực tiếp cảnh VR 360 vào ảnh tải về.\n\nBạn có muốn tải về ảnh nhân vật đã tách nền (trong suốt) để tự ghép, hoặc hủy để tải ảnh nền khác lên?");
-            if (!confirmSave) return;
+        // Check if BG exists or confirm transparent
+        if (!store.bg) {
+            Swal.fire({
+                title: 'Lưu ảnh trong suốt?',
+                text: "Bạn chưa chọn nền. Hệ thống không thể chụp cảnh VR (do bảo mật). Bạn có muốn lưu ảnh nhân vật tách nền về máy không?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Tải về',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) this.downloadCanvas();
+            });
+        } else {
+            this.downloadCanvas();
         }
-
-        // Tạo canvas tạm để xuất ảnh chất lượng cao
-        showToast("⏳ Đang tạo ảnh...");
-        setTimeout(() => {
-            const link = document.createElement('a');
-            link.download = 'ninh-thuan-postcard-' + Date.now() + '.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            showToast("✅ Đã lưu ảnh vào máy!");
-        }, 500);
     }
+
+    static downloadCanvas() {
+        const link = document.createElement('a');
+        link.download = `NinhThuan_Studio_${Date.now()}.png`;
+        link.href = store.canvas.toDataURL('image/png', 1.0);
+        link.click();
+    }
+}
+
+// --- CLASS: INPUT MANAGER (TOUCH LOGIC) ---
+class InputManager {
+    constructor() {
+        this.active = false;
+        this.startP = []; // Touch points
+        this.startState = {}; // Snapshot of state at touch start
+        
+        const el = store.canvas;
+        el.addEventListener('touchstart', this.onStart.bind(this), {passive: false});
+        el.addEventListener('touchmove', this.onMove.bind(this), {passive: false});
+        el.addEventListener('touchend', () => this.active = false);
+        
+        // Mouse support for Desktop testing
+        el.addEventListener('mousedown', (e) => {
+            this.onStart({touches: [{clientX: e.clientX, clientY: e.clientY}], preventDefault: ()=>{}});
+        });
+        window.addEventListener('mousemove', (e) => {
+            if(this.active) this.onMove({touches: [{clientX: e.clientX, clientY: e.clientY}], preventDefault: ()=>{}});
+        });
+        window.addEventListener('mouseup', () => this.active = false);
+    }
+
+    onStart(e) {
+        if (!store.img) return;
+        // Basic Hit Test (Giả lập vùng bao quanh tâm)
+        // Trong thực tế cần tính ma trận transform ngược, nhưng ở đây dùng khoảng cách cho đơn giản
+        // Nếu chạm vào màn hình thì assume là muốn điều khiển (UX tốt hơn cho mobile)
+        
+        this.active = true;
+        this.startP = Array.from(e.touches).map(t => ({x: t.clientX, y: t.clientY}));
+        this.startState = { 
+            x: store.x, y: store.y, 
+            scale: store.scale, 
+            rotation: store.rotation 
+        };
+    }
+
+    onMove(e) {
+        if (!this.active) return;
+        e.preventDefault(); // Stop scrolling
+        
+        const touches = Array.from(e.touches);
+        
+        // 1 Finger: Drag
+        if (touches.length === 1 && this.startP.length === 1) {
+            const dx = touches[0].clientX - this.startP[0].x;
+            const dy = touches[0].clientY - this.startP[0].y;
+            store.x = this.startState.x + dx;
+            store.y = this.startState.y + dy;
+        }
+        
+        // 2 Fingers: Scale & Rotate
+        if (touches.length === 2 && this.startP.length === 2) {
+            // Calc current vector
+            const v1 = { x: touches[1].clientX - touches[0].clientX, y: touches[1].clientY - touches[0].clientY };
+            const len1 = Math.hypot(v1.x, v1.y);
+            const angle1 = Math.atan2(v1.y, v1.x);
+
+            // Calc start vector
+            const v0 = { x: this.startP[1].x - this.startP[0].x, y: this.startP[1].y - this.startP[0].y };
+            const len0 = Math.hypot(v0.x, v0.y);
+            const angle0 = Math.atan2(v0.y, v0.x);
+
+            // Apply
+            const newScale = this.startState.scale * (len1 / len0);
+            store.scale = Math.max(CONFIG.MIN_SCALE, Math.min(CONFIG.MAX_SCALE, newScale));
+            store.rotation = this.startState.rotation + (angle1 - angle0);
+            
+            // Move center point to follow fingers
+            const center0 = { x: (this.startP[0].x + this.startP[1].x)/2, y: (this.startP[0].y + this.startP[1].y)/2 };
+            const center1 = { x: (touches[0].clientX + touches[1].clientX)/2, y: (touches[0].clientY + touches[1].clientY)/2 };
+            store.x = this.startState.x + (center1.x - center0.x);
+            store.y = this.startState.y + (center1.y - center0.y);
+        }
+        
+        requestAnimationFrame(Editor.render.bind(Editor));
+    }
+}
+
+// --- CLASS: APP CONTROLLER ---
+class App {
+    static init() {
+        this.inputMgr = new InputManager();
+        window.addEventListener('resize', () => {
+            store.resize();
+            Editor.render();
+        });
+        // Intro video
+        // (Bỏ qua logic intro phức tạp ở bản này để tập trung vào tính năng, 
+        // giả sử video intro nằm ở layer trên cùng nếu cần)
+    }
+
+    static switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById('tab-' + tabId).classList.add('active');
+        // Update Nav visual active state (Logic đơn giản)
+        event.target.classList.add('active');
+    }
+
+    static toggleEditor() {
+        document.getElementById('editor').classList.toggle('visible');
+    }
+
+    static toggleUI() {
+        document.body.classList.toggle('hide-ui');
+        if (document.body.classList.contains('hide-ui')) {
+            Swal.fire({
+                text: 'Chạm vào màn hình để hiện lại menu',
+                toast: true, position: 'bottom', timer: 2000, showConfirmButton: false,
+                background: 'rgba(0,0,0,0.8)', color: '#fff'
+            });
+            
+            // One-time listener to restore UI
+            const restore = () => {
+                document.body.classList.remove('hide-ui');
+                window.removeEventListener('touchstart', restore);
+                window.removeEventListener('mousedown', restore);
+            };
+            setTimeout(() => {
+                window.addEventListener('touchstart', restore);
+                window.addEventListener('mousedown', restore);
+            }, 500);
+        }
+    }
+
+    static showLoader(show, msg = "") {
+        const el = document.getElementById('loader');
+        if(show) {
+            el.style.display = 'flex';
+            document.getElementById('loader-msg').innerText = msg;
+        } else {
+            el.style.display = 'none';
+        }
+    }
+    
+    static showGestureHint() {
+        const h = document.getElementById('gesture-hint');
+        h.style.opacity = 1;
+        setTimeout(() => h.style.opacity = 0, 4000);
+    }
+}
+
+// Start App
+App.init();
 
 </script>
 </body>
