@@ -2,87 +2,89 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Tour & Chatbot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ninh Thuận AI - Mobile Optimized</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
             --primary: #ff9800; 
-            --glass: rgba(255, 255, 255, 0.85);
+            --glass: rgba(255, 255, 255, 0.9);
             --dark: #2c3e50;
             --success: #27ae60;
         }
         
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; }
+        /* Chống cuộn trang trên mobile */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: #000; touch-action: none; 
+        }
 
         /* --- 1. VIDEO INTRO --- */
         #intro-overlay { 
-            position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; 
         }
-        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- 2. HỆ THỐNG IFRAME VR --- */
-        .pano-page { position: absolute; inset: 0; visibility: hidden; z-index: 1; }
+        /* --- 2. HỆ THỐNG IFRAME --- */
+        .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; z-index: 1; }
         .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- 3. ĐIỀU HƯỚNG --- */
-        .top-btns { position: absolute; top: 20px; left: 20px; z-index: 10000; display: flex; gap: 12px; }
+        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
+
+        /* --- 3. ĐIỀU HƯỚNG MOBILE (To hơn, dễ bấm) --- */
+        .top-btns { 
+            position: absolute; top: 15px; left: 15px; 
+            z-index: 10000; display: flex; gap: 10px; 
+        }
         .round-btn {
             width: 50px; height: 50px; background: var(--primary); color: white;
-            border: none; border-radius: 50%; cursor: pointer; font-size: 22px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none; border-radius: 50%; cursor: pointer; font-size: 18px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; -webkit-tap-highlight-color: transparent;
         }
-        .round-btn:hover { transform: scale(1.1); }
-        .round-btn.active { outline: 4px solid white; background: var(--dark); }
+        .round-btn.cart { background: var(--success); }
+        .round-btn.active { border: 3px solid white; transform: scale(1.05); }
 
-        /* Studio AI Menu */
+        /* Menu Studio AI - Tối ưu cho màn hình nhỏ */
         .controls { 
-            position: absolute; top: 85px; left: 20px; z-index: 9000; width: 280px; 
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+            z-index: 9000; width: 90%; max-width: 320px; 
             background: var(--glass); backdrop-filter: blur(15px);
-            padding: 20px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            transition: 0.4s; transform-origin: top left;
+            padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .controls.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
+        .controls.hidden { transform: translateX(-50%) translateY(150%); opacity: 0; }
 
-        /* --- 4. CHATBOT AI XỊN XÒ --- */
-        #chat-wrapper { position: fixed; bottom: 25px; left: 25px; z-index: 10001; }
-        #chat-box {
-            display: none; width: 330px; height: 480px; background: white;
-            border-radius: 20px; flex-direction: column; box-shadow: 0 10px 50px rgba(0,0,0,0.5);
-            margin-bottom: 15px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1);
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        /* Loading & Overlay */
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .loader { width: 40px; height: 40px; border: 4px solid #fff; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        .chat-header { background: var(--primary); color: white; padding: 18px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
-        .chat-content { flex: 1; overflow-y: auto; padding: 15px; background: #f8f9fa; display: flex; flex-direction: column; gap: 12px; }
-        .chat-footer { display: flex; padding: 12px; border-top: 1px solid #eee; background: white; align-items: center; }
-        .chat-footer input { flex: 1; border: none; outline: none; padding: 10px; font-size: 14px; background: #f0f2f5; border-radius: 20px; }
+        .label-btn { display: block; padding: 15px; background: var(--primary); color: white; border-radius: 12px; cursor: pointer; text-align: center; font-weight: bold; margin-bottom: 10px; }
+        .btn-save { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; background: var(--success); margin-top: 10px; }
         
-        .msg { padding: 10px 14px; border-radius: 18px; max-width: 85%; font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .bot { background: #ffffff; align-self: flex-start; color: #333; border-bottom-left-radius: 2px; }
-        .user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-
-        #ui-canvas { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
-        #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        /* Slider to hơn cho mobile */
+        input[type=range] { width: 100%; height: 30px; }
     </style>
 </head>
 <body>
 
-<div id="loading"><div style="width:45px; height:45px; border:5px solid #fff; border-top:5px solid var(--primary); border-radius:50%; animation:spin 1s linear infinite;"></div><p style="margin-top:15px; font-weight:bold;">THỔ ĐỊA ĐANG TÁCH NỀN...</p></div>
+<div id="loading"><div class="loader"></div><p>AI ĐANG TÁCH NỀN...</p></div>
 
 <div id="intro-overlay" onclick="killIntro()">
     <video id="v-intro" autoplay muted loop playsinline>
         <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
     </video>
+    <div style="position:absolute; bottom:20%; color:white; font-weight:bold; text-shadow:1px 1px 5px #000;">CHẠM ĐỂ BẮT ĐẦU</div>
 </div>
 
 <div class="top-btns">
-    <button class="round-btn active" id="btn-vr" onclick="switchTab('vr')" title="Xem Tour VR">📍</button>
-    <button class="round-btn" id="btn-shop" onclick="switchTab('shop')" title="Cửa hàng">🛒</button>
-    <button class="round-btn" onclick="toggleAI()" title="Chụp ảnh AI">📸</button>
+    <button class="round-btn active" id="btn-vr" onclick="switchTab('vr')">VR</button>
+    <button class="round-btn cart" id="btn-shop" onclick="switchTab('shop')">🛒</button>
+    <button class="round-btn" onclick="toggleAI()">👤</button>
 </div>
 
 <div id="page-vr" class="pano-page active">
@@ -93,121 +95,116 @@
 </div>
 
 <div class="controls hidden" id="ai-menu">
-    <h3 style="text-align: center; margin: 0 0 15px 0; color: var(--dark);">NINH THUẬN STUDIO</h3>
-    <label for="input-file" style="display:block; padding:12px; background:var(--primary); color:white; border-radius:15px; cursor:pointer; text-align:center; font-weight:bold;">Tải ảnh chân dung</label>
+    <h3 style="text-align: center; margin: 0 0 10px 0;">STUDIO NINH THUẬN AI</h3>
+    <label for="input-file" class="label-btn">Tải ảnh của bạn</label>
     <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
-    <div id="edit-area" style="display: none; margin-top:20px;">
-        <p style="font-size:12px; color:#666; margin-bottom:5px;">Phóng to/nhỏ ảnh:</p>
-        <input type="range" id="size-slider" min="0.1" max="2.5" step="0.01" value="1.0" oninput="render()" style="width:100%;">
-        <button style="width:100%; padding:15px; margin-top:15px; background:var(--success); color:white; border:none; border-radius:15px; font-weight:bold; cursor:pointer;" onclick="startCapture()">Lưu bưu thiếp 📸</button>
+    
+    <div id="edit-area" style="display: none;">
+        <p style="font-size: 12px; margin: 5px 0;">Kéo thả để di chuyển - Dùng thanh trượt để phóng to</p>
+        <input type="range" id="size-slider" min="0.1" max="2.0" step="0.01" value="0.8" oninput="render()">
+        <button class="btn-save" onclick="startCapture()">Lưu bưu thiếp</button>
     </div>
-</div>
-
-<div id="chat-wrapper">
-    <div id="chat-box">
-        <div class="chat-header">
-            <span>Thổ địa Ninh Thuận AI</span>
-            <span onclick="toggleChat()" style="cursor:pointer; font-size:26px;">&times;</span>
-        </div>
-        <div class="chat-content" id="chat-display">
-            <div class="msg bot">Chào bạn! Thổ địa Ninh Thuận đây. Cần tư vấn đi chơi hay ăn uống gì cứ nhắn tui, đừng ngại! 😊</div>
-        </div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" placeholder="Hỏi thổ địa..." onkeypress="if(event.key==='Enter') sendAI()">
-            <button onclick="sendAI()" style="border:none; background:none; cursor:pointer; font-size:22px; margin-left:8px;">🚀</button>
-        </div>
-    </div>
-    <button class="round-btn" onclick="toggleChat()" style="background: var(--dark); font-size: 26px;">💬</button>
 </div>
 
 <canvas id="ui-canvas"></canvas>
 
 <script>
-    const PROXY_URL = "https://chatbot-ninhthuan.monheo89.workers.dev/"; 
-    const REMOVE_BG_API = "FtyKLHXkG5By3gFBCBcoTACC"; //
-    
+    const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC";
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
     let userImg = null, imgPos = { x: 0, y: 0, w: 0, h: 0 };
+    let isDragging = false;
 
-    window.onload = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.onload = () => { 
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight; 
+    };
 
-    function killIntro() { const intro = document.getElementById('intro-overlay'); if (intro) { document.getElementById('v-intro').pause(); intro.remove(); } }
-    function switchTab(tab) { killIntro(); document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active')); document.getElementById('page-' + tab).classList.add('active'); document.getElementById('btn-' + tab).classList.add('active'); }
-    function toggleAI() { killIntro(); document.getElementById('ai-menu').classList.toggle('hidden'); }
-    function toggleChat() { killIntro(); const box = document.getElementById('chat-box'); box.style.display = (box.style.display === 'flex') ? 'none' : 'flex'; }
-
-    // --- LỆNH GỬI TIN NHẮN CHUẨN (FIX LỖI BẬN) ---
-    async function sendAI() {
-        const input = document.getElementById('chat-input');
-        const display = document.getElementById('chat-display');
-        const text = input.value.trim();
-        if (!text) return;
-
-        display.innerHTML += `<div class="msg user">${text}</div>`;
-        input.value = "";
-        const tempId = "ai-" + Date.now();
-        display.innerHTML += `<div class="msg bot" id="${tempId}">Thổ địa đang nghe...</div>`;
-        display.scrollIntoView({ behavior: 'smooth', block: 'end' });
-
-        try {
-            const res = await fetch(PROXY_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: text })
-            });
-            const data = await res.json();
-            document.getElementById(tempId).innerText = data.reply || "Tui chưa nghe rõ, bạn nói lại nha!";
-        } catch (e) {
-            document.getElementById(tempId).innerText = "Mạng yếu quá, Thổ địa chưa nghe được!";
-        }
-        display.scrollTop = display.scrollHeight;
+    function switchTab(tab) {
+        killIntro();
+        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('page-' + tab).classList.add('active');
+        document.getElementById('btn-' + tab).classList.add('active');
     }
 
-    // --- Logic Studio AI ---
+    function killIntro() {
+        const intro = document.getElementById('intro-overlay');
+        if (intro) {
+            document.getElementById('v-intro').pause();
+            intro.style.opacity = '0';
+            setTimeout(() => intro.remove(), 300);
+        }
+    }
+
+    function toggleAI() { 
+        killIntro(); 
+        document.getElementById('ai-menu').classList.toggle('hidden'); 
+    }
+
     async function initAI(input) {
         if (!input.files[0]) return;
         document.getElementById('loading').style.display = "flex";
         const formData = new FormData();
         formData.append("image_file", input.files[0]);
+
         try {
             const res = await fetch("https://api.remove.bg/v1.0/removebg", { 
-                method: "POST", headers: { "X-Api-Key": REMOVE_BG_API }, body: formData 
+                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData 
             });
             const blob = await res.blob();
             const img = new Image();
             img.onload = () => {
                 userImg = img;
                 const ratio = img.width / img.height;
-                imgPos.h = 450; imgPos.w = 450 * ratio;
+                imgPos.h = window.innerHeight * 0.4; 
+                imgPos.w = imgPos.h * ratio;
                 imgPos.x = (canvas.width - imgPos.w) / 2;
-                imgPos.y = canvas.height - imgPos.h - 50;
+                imgPos.y = canvas.height - imgPos.h - 100;
+                
                 document.getElementById('loading').style.display = "none";
                 document.getElementById('edit-area').style.display = "block";
                 render();
             };
             img.src = URL.createObjectURL(blob);
-        } catch (e) { document.getElementById('loading').style.display = "none"; alert("Lỗi tách nền!"); }
+        } catch (e) { 
+            alert("Lỗi tách nền, vui lòng kiểm tra mạng!");
+            document.getElementById('loading').style.display = "none"; 
+        }
     }
 
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const s = document.getElementById('size-slider').value;
-        if (userImg) ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * s, imgPos.h * s);
+        if (userImg) {
+            const scale = document.getElementById('size-slider').value;
+            ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * scale, imgPos.h * scale);
+        }
     }
+
+    // Xử lý di chuyển ảnh trên mobile (Touch Events)
+    window.addEventListener('touchstart', (e) => { isDragging = true; });
+    window.addEventListener('touchend', () => { isDragging = false; });
+    window.addEventListener('touchmove', (e) => {
+        if (isDragging && userImg) {
+            const touch = e.touches[0];
+            imgPos.x = touch.clientX - (imgPos.w / 2);
+            imgPos.y = touch.clientY - (imgPos.h / 2);
+            render();
+        }
+    });
 
     function startCapture() {
-        html2canvas(document.body).then(c => {
-            const a = document.createElement('a');
-            a.download = 'ninh-thuan-postcard.png';
-            a.href = c.toDataURL();
-            a.click();
-        });
+        document.getElementById('ai-menu').classList.add('hidden');
+        setTimeout(() => {
+            html2canvas(document.body).then(c => {
+                const a = document.createElement('a');
+                a.download = 'ninh-thuan-ai.png';
+                a.href = c.toDataURL();
+                a.click();
+                document.getElementById('ai-menu').classList.remove('hidden');
+            });
+        }, 500);
     }
-
-    const style = document.createElement('style');
-    style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
-    document.head.appendChild(style);
 </script>
 </body>
 </html>
