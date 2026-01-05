@@ -31,7 +31,7 @@
             border-radius: 30px; border: 1px solid #fff; font-weight: bold;
         }
 
-        /* --- 2. VR IFRAME (Tối ưu để không bị che bởi UI hệ thống) --- */
+        /* --- 2. VR IFRAME --- */
         .pano-page { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             visibility: hidden; z-index: 1; 
@@ -39,13 +39,10 @@
         .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- 3. ĐIỀU HƯỚNG (Đưa lên cao để tránh các nút của Panoee) --- */
+        /* --- 3. ĐIỀU HƯỚNG --- */
         .top-btns { 
-            position: absolute; 
-            top: 25px; /* Đẩy xuống một chút để tránh thanh địa chỉ trình duyệt */
-            left: 20px;
-            z-index: 9999; 
-            display: flex; flex-direction: column; gap: 12px; 
+            position: absolute; top: 25px; left: 20px;
+            z-index: 9999; display: flex; flex-direction: column; gap: 12px; 
         }
         .round-btn {
             width: 48px; height: 48px; background: var(--primary); color: white;
@@ -56,30 +53,30 @@
         .round-btn.active { background: #fff; color: var(--primary); transform: scale(1.1); }
         .round-btn.cart { background: var(--success); }
 
-        /* --- 4. STUDIO AI (Dạng cửa sổ nổi - Float) --- */
+        /* --- 4. STUDIO AI --- */
         .controls { 
-            position: absolute; 
-            top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1);
-            width: 85%; max-width: 320px;
-            z-index: 10000; background: var(--glass); 
-            padding: 25px; border-radius: 25px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1);
+            width: 85%; max-width: 320px; z-index: 10000; background: var(--glass); 
+            padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             transition: 0.3s;
         }
         .controls.hidden { transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; }
+        .close-ai { position: absolute; top: 10px; right: 15px; font-size: 22px; color: #999; font-weight: bold; cursor: pointer; }
 
         #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
 
-        .label-btn { display: block; padding: 15px; background: var(--primary); color: white; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 15px; }
-        .btn-save { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; color: white; background: var(--success); }
-        .close-ai { position: absolute; top: 10px; right: 15px; font-size: 20px; color: #999; font-weight: bold; }
+        /* Nút Tải Ảnh */
+        .label-btn { display: block; padding: 15px; background: var(--primary); color: white; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        
+        /* Nút Lưu */
+        .btn-save { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; color: white; background: var(--success); cursor: pointer; }
 
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 100000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
     </style>
 </head>
 <body>
 
-<div id="loading"><p>ĐANG XỬ LÝ...</p></div>
+<div id="loading"><p>ĐANG TÁCH NỀN...</p></div>
 
 <div id="intro-overlay" onclick="killIntro()">
     <video id="v-intro" autoplay muted loop playsinline>
@@ -103,12 +100,14 @@
 
 <div class="controls hidden" id="ai-menu">
     <div class="close-ai" onclick="toggleAI()">✕</div>
-    <h3 style="text-align: center; margin-top: 0;">STUDIO AI</h3>
-    <label for="input-file" class="label-btn">TẢI ẢNH CHÂN DUNG</label>
+    <h3 style="text-align: center; margin-top: 0; color: var(--dark);">STUDIO AI</h3>
+    
+    <label for="input-file" class="label-btn">TẢI ẢNH</label>
     <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
     
     <div id="edit-area" style="display: none;">
-        <input type="range" id="size-slider" min="0.5" max="2.0" step="0.01" value="1.0" oninput="render()" style="width: 100%; margin: 15px 0;">
+        <p style="font-size: 14px; margin: 10px 0 5px 0; color: #666;">Chỉnh kích thước người:</p>
+        <input type="range" id="size-slider" min="0.3" max="2.5" step="0.01" value="1.0" oninput="render()" style="width: 100%; margin-bottom: 15px;">
         <button class="btn-save" onclick="startCapture()">LƯU ẢNH CHECK-IN</button>
     </div>
 </div>
@@ -135,11 +134,16 @@
         document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('page-' + tab).classList.add('active');
         document.getElementById('btn-' + tab).classList.add('active');
+        document.getElementById('ai-menu').classList.add('hidden');
     }
 
     function killIntro() {
         const intro = document.getElementById('intro-overlay');
-        if (intro) { intro.style.opacity = '0'; setTimeout(() => intro.remove(), 500); }
+        if (intro) { 
+            document.getElementById('v-intro').pause();
+            intro.style.opacity = '0'; 
+            setTimeout(() => intro.remove(), 500); 
+        }
     }
 
     function toggleAI() { 
@@ -162,20 +166,23 @@
             img.onload = () => {
                 userImg = img;
                 document.getElementById('loading').style.display = "none";
-                document.getElementById('edit-area').style.display = "block";
+                document.getElementById('edit-area').style.display = "block"; // HIỆN THANH TRƯỢT KHI XONG
                 render();
             };
             img.src = URL.createObjectURL(blob);
-        } catch (e) { document.getElementById('loading').style.display = "none"; }
+        } catch (e) { 
+            alert("Lỗi kết nối hoặc hết lượt API");
+            document.getElementById('loading').style.display = "none"; 
+        }
     }
 
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (userImg) {
             const s = document.getElementById('size-slider').value;
-            const w = (canvas.width * 0.6) * s;
+            const w = (canvas.width * 0.5) * s;
             const h = (w * (userImg.height / userImg.width));
-            ctx.drawImage(userImg, (canvas.width - w)/2, canvas.height - h - 20, w, h);
+            ctx.drawImage(userImg, (canvas.width - w)/2, canvas.height - h - 50, w, h);
         }
     }
 
@@ -183,9 +190,9 @@
         document.querySelector('.top-btns').style.display = 'none';
         document.getElementById('ai-menu').style.display = 'none';
         setTimeout(() => {
-            html2canvas(document.body).then(c => {
+            html2canvas(document.body, { useCORS: true }).then(c => {
                 const a = document.createElement('a');
-                a.download = 'ninh-thuan-ai.png';
+                a.download = 'checkin-ninh-thuan.png';
                 a.href = c.toDataURL();
                 a.click();
                 document.querySelector('.top-btns').style.display = 'flex';
