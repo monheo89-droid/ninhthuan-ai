@@ -3,53 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ninh Thuận AI - Fixed Lag</title>
+    <title>Ninh Thuận AI - Fixed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #ff9800; --success: #27ae60; --glass: rgba(255, 255, 255, 0.95); }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; background: #000; }
 
         /* --- INTRO LAYER --- */
-        #intro-overlay { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; align-items: center; justify-content: center; transition: 0.5s; }
+        #intro-overlay { position: fixed; inset: 0; background: #000; z-index: 99999; display: flex; align-items: center; justify-content: center; }
         #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
-        .start-btn { position: absolute; bottom: 15%; background: var(--primary); color: #fff; padding: 15px 30px; border-radius: 40px; border: 2px solid #fff; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .start-btn { position: absolute; bottom: 15%; background: var(--primary); color: #fff; padding: 15px 30px; border-radius: 40px; border: 2px solid #fff; font-weight: bold; cursor: pointer; }
 
         /* --- NAVIGATION --- */
         .ui-sidebar { position: absolute; top: 20px; left: 15px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; }
-        .round-btn { width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; font-size: 22px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; }
+        .round-btn { width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; font-size: 22px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
-        /* --- STUDIO BOX (NHỎ GỌN BÊN TRÁI) --- */
-        #ai-box { 
-            position: absolute; top: 80px; left: 15px; width: 250px; 
-            background: var(--glass); padding: 15px; border-radius: 20px; 
-            z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: 0.3s;
-        }
+        /* --- STUDIO BOX --- */
+        #ai-box { position: absolute; top: 80px; left: 15px; width: 250px; background: var(--glass); padding: 15px; border-radius: 20px; z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: 0.3s; }
         #ai-box.hidden { opacity: 0; pointer-events: none; transform: translateX(-20px); }
 
-        /* --- CANVAS VẼ ẢNH (CHỐNG TREO) --- */
-        #ui-canvas { 
-            position: absolute; inset: 0; z-index: 100; 
-            pointer-events: none; /* Mặc định không chặn Tour VR */
-            touch-action: none;   /* Chống lag khi kéo trên mobile */
-        }
-        #ui-canvas.active { pointer-events: auto; }
+        /* --- CANVAS (LỚP NHÂN VẬT) --- */
+        #ui-canvas { position: absolute; inset: 0; z-index: 100; pointer-events: none; touch-action: none; }
+        /* Khi bật chế độ di chuyển, canvas sẽ nhận chuột/chạm */
+        #ui-canvas.mode-move { pointer-events: auto; }
 
         .pano-page { position: absolute; inset: 0; visibility: hidden; z-index: 1; }
         .pano-page.active { visibility: visible; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
         
-        #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .label-btn { display: block; padding: 12px; background: var(--primary); color: white; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100000; display: none; align-items: center; justify-content: center; color: white; }
+        
+        /* Nút chuyển đổi chế độ */
+        .mode-toggle { width: 100%; padding: 10px; margin-top: 10px; border: 2px solid var(--primary); border-radius: 10px; background: white; font-weight: bold; cursor: pointer; }
+        .mode-toggle.active { background: var(--primary); color: white; }
     </style>
 </head>
 <body>
 
 <div id="loading"><p>ĐANG XỬ LÝ...</p></div>
 
-<div id="intro-overlay">
+<div id="intro-overlay" onclick="killIntro()">
     <video id="v-intro" autoplay muted loop playsinline><source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4"></video>
-    <div class="start-btn" onclick="killIntro()">MỜI BẠN BẮT ĐẦU THAM QUAN</div>
+    <div class="start-btn">MỜI BẠN BẮT ĐẦU THAM QUAN</div>
 </div>
 
 <div class="ui-sidebar">
@@ -59,15 +55,17 @@
 </div>
 
 <div id="ai-box" class="hidden">
-    <div style="text-align:right; font-weight:bold; color:#999; cursor:pointer;" onclick="toggleAI()">✕</div>
-    <h3 style="margin: 0 0 15px 0; text-align:center; font-size: 18px;">STUDIO AI</h3>
+    <div style="text-align:right; cursor:pointer;" onclick="toggleAI()">✕</div>
+    <h3 style="margin: 0 0 10px 0; text-align:center;">STUDIO AI</h3>
     <label for="input-file" class="label-btn">TẢI ẢNH</label>
     <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="initAI(this)">
     
     <div id="edit-area" style="display: none;">
-        <p style="font-size:12px; color:#666; margin-bottom:5px;">Chạm kéo ảnh để di chuyển:</p>
+        <button id="btn-mode" class="mode-toggle" onclick="toggleMoveMode()">CHẾ ĐỘ: XOAY CẢNH</button>
+        
+        <p style="font-size:12px; margin: 10px 0 5px;">Kích thước:</p>
         <input type="range" id="size-slider" min="0.2" max="2.5" step="0.01" value="1.0" oninput="render()" style="width: 100%; margin-bottom: 15px;">
-        <button onclick="startCapture()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LƯU ẢNH CHECK-IN</button>
+        <button onclick="startCapture()" style="width:100%; padding:12px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold;">LƯU ẢNH</button>
     </div>
 </div>
 
@@ -84,17 +82,14 @@
     let imgPos = { x: 100, y: 300, w: 0, h: 0 };
     let isDragging = false;
     let offset = { x: 0, y: 0 };
+    let moveMode = false; // Mặc định là xoay cảnh
 
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; render(); }
     window.onresize = resize; resize();
 
     function killIntro() {
         const intro = document.getElementById('intro-overlay');
-        if (intro) { 
-            document.getElementById('v-intro').pause();
-            intro.style.opacity = '0'; 
-            setTimeout(() => intro.remove(), 500); 
-        }
+        if (intro) { document.getElementById('v-intro').pause(); intro.style.opacity = '0'; setTimeout(() => intro.remove(), 500); }
     }
 
     function switchTab(tab) {
@@ -102,11 +97,30 @@
         document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
         document.getElementById('page-' + tab).classList.add('active');
         document.getElementById('ai-box').classList.add('hidden');
+        disableMoveMode();
     }
 
-    function toggleAI() {
-        killIntro();
-        document.getElementById('ai-box').classList.toggle('hidden');
+    function toggleAI() { killIntro(); document.getElementById('ai-box').classList.toggle('hidden'); }
+
+    // Tính năng chuyển đổi chế độ chuột
+    function toggleMoveMode() {
+        moveMode = !moveMode;
+        const btn = document.getElementById('btn-mode');
+        if (moveMode) {
+            btn.innerText = "CHẾ ĐỘ: DI CHUYỂN NGƯỜI";
+            btn.classList.add('active');
+            canvas.classList.add('mode-move'); // Bật cảm ứng lớp trên
+        } else {
+            disableMoveMode();
+        }
+    }
+
+    function disableMoveMode() {
+        moveMode = false;
+        const btn = document.getElementById('btn-mode');
+        btn.innerText = "CHẾ ĐỘ: XOAY CẢNH";
+        btn.classList.remove('active');
+        canvas.classList.remove('mode-move'); // Trả cảm ứng về lớp VR dưới
     }
 
     async function initAI(input) {
@@ -121,10 +135,9 @@
             img.onload = () => {
                 userImg = img;
                 const ratio = img.width / img.height;
-                imgPos.h = 400; imgPos.w = 400 * ratio; // Khôi phục kích thước từ file cũ
+                imgPos.h = 450; imgPos.w = 450 * ratio; // Kích thước từ file cũ tab+ng.py
                 document.getElementById('loading').style.display = "none";
                 document.getElementById('edit-area').style.display = "block";
-                canvas.classList.add('active'); // Cho phép tương tác khi có ảnh
                 render();
             };
             img.src = URL.createObjectURL(blob);
@@ -139,40 +152,26 @@
         }
     }
 
-    // --- LOGIC DI CHUYỂN BẰNG TAY (TOUCH/MOUSE) ---
-    function getEventPos(e) {
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX, y: clientY };
-    }
-
+    // --- LOGIC DI CHUYỂN NGƯỜI (Khôi phục từ file gốc) ---
+    function getPos(e) { return { x: e.touches ? e.touches[0].clientX : e.clientX, y: e.touches ? e.touches[0].clientY : e.clientY }; }
+    
     function startDrag(e) {
-        if (!userImg) return;
-        const pos = getEventPos(e);
+        if (!userImg || !moveMode) return;
+        const pos = getPos(e);
         const s = document.getElementById('size-slider').value;
-        // Kiểm tra xem có chạm trúng nhân vật không
-        if (pos.x >= imgPos.x && pos.x <= imgPos.x + imgPos.w * s &&
-            pos.y >= imgPos.y && pos.y <= imgPos.y + imgPos.h * s) {
+        if (pos.x >= imgPos.x && pos.x <= imgPos.x + imgPos.w * s && pos.y >= imgPos.y && pos.y <= imgPos.y + imgPos.h * s) {
             isDragging = true;
             offset.x = pos.x - imgPos.x;
             offset.y = pos.y - imgPos.y;
         }
     }
-
-    function doDrag(e) {
-        if (!isDragging) return;
-        const pos = getEventPos(e);
-        imgPos.x = pos.x - offset.x;
-        imgPos.y = pos.y - offset.y;
-        render();
-    }
-
+    function drag(e) { if (isDragging) { const pos = getPos(e); imgPos.x = pos.x - offset.x; imgPos.y = pos.y - offset.y; render(); } }
     function stopDrag() { isDragging = false; }
 
     canvas.addEventListener('mousedown', startDrag);
-    canvas.addEventListener('touchstart', startDrag, { passive: false });
-    window.addEventListener('mousemove', doDrag);
-    window.addEventListener('touchmove', (e) => { if(isDragging) e.preventDefault(); doDrag(e); }, { passive: false });
+    canvas.addEventListener('touchstart', startDrag);
+    window.addEventListener('mousemove', drag);
+    window.addEventListener('touchmove', drag, { passive: false });
     window.addEventListener('mouseup', stopDrag);
     window.addEventListener('touchend', stopDrag);
 
@@ -182,9 +181,7 @@
         setTimeout(() => {
             html2canvas(document.body).then(c => {
                 const a = document.createElement('a');
-                a.download = 'checkin-ninhthuan.png';
-                a.href = c.toDataURL();
-                a.click();
+                a.download = 'checkin.png'; a.href = c.toDataURL(); a.click();
                 document.querySelector('.ui-sidebar').style.display = 'flex';
                 document.getElementById('ai-box').style.display = 'block';
             });
