@@ -2,534 +2,313 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Ninh Thuan AI Tour - Professional Edition</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ninh Thuan AI - Professional</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    
     <style>
-        /* --- CORE RESET & VARS --- */
-        :root {
-            --bg-dark: #0f0f0f;
-            --panel-bg: rgba(28, 28, 30, 0.95);
-            --accent: #FF6B00; /* Cam cháy sang trọng */
-            --accent-hover: #ff8533;
-            --text-main: #ffffff;
-            --text-sub: #8e8e93;
-            --danger: #ff453a;
-            --safe-area-top: env(safe-area-inset-top);
-            --safe-area-bottom: env(safe-area-inset-bottom);
+        :root { 
+            --primary: #FF6B00; /* Cam cháy sang trọng */
+            --bg-panel: rgba(20, 20, 20, 0.95);
+            --text-light: #ffffff;
+        }
+        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+
+        /* --- 1. VIDEO INTRO --- */
+        #intro-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.5s;
+        }
+        #intro-overlay video { width: 100%; height: 100%; object-fit: cover; }
+        .skip-btn {
+            position: absolute; bottom: 40px; padding: 10px 20px; 
+            border: 1px solid white; color: white; border-radius: 20px; 
+            background: rgba(0,0,0,0.5); cursor: pointer; z-index: 10000;
         }
 
-        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background: #000; font-family: 'Inter', sans-serif;
-            overflow: hidden; touch-action: none; user-select: none;
+        /* --- 2. LAYOUT IFRAME (Sửa lỗi đen màn hình) --- */
+        /* Chúng ta dùng 1 container chung, thay đổi src bằng JS */
+        #vr-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; background: #000;
         }
-
-        /* --- LAYOUT LAYERS --- */
-        #layer-vr { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        #layer-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
-        
-        /* Iframe Fullscreen */
         iframe { width: 100%; height: 100%; border: none; display: block; }
-        .tab-content { display: none; width: 100%; height: 100%; }
-        .tab-content.active { display: block; animation: fadeIn 0.5s ease; }
 
-        /* --- UI COMPONENTS --- */
-        
-        /* 1. Top Bar (Navigation) */
+        /* Canvas để vẽ nhân vật AI đè lên trên */
+        #ui-canvas { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 50; pointer-events: none; /* Để bấm xuyên qua canvas vào iframe */
+        }
+
+        /* --- 3. THANH ĐIỀU HƯỚNG (TOP BAR) --- */
         .top-bar {
             position: absolute; top: 0; left: 0; width: 100%;
-            padding: calc(15px + var(--safe-area-top)) 20px 10px;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100; pointer-events: none;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
         
-        .nav-pill {
-            pointer-events: auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            border-radius: 100px; padding: 4px; display: flex; gap: 5px; border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .nav-btn {
-            border: none; background: transparent; color: var(--text-sub);
-            padding: 8px 16px; border-radius: 100px; font-weight: 600; font-size: 13px;
-            cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-        .nav-btn.active { background: var(--text-main); color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        
-        .action-btn {
-            pointer-events: auto; width: 44px; height: 44px; border-radius: 50%;
+        .nav-switch {
             background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2); color: white;
-            display: flex; align-items: center; justify-content: center; font-size: 18px;
-            cursor: pointer; transition: 0.2s;
+            border-radius: 30px; padding: 4px; display: flex;
         }
-        .action-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.3); }
-
-        /* 2. Bottom Toolbar (Editor) */
-        .editor-panel {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: var(--panel-bg);
-            border-top-left-radius: 24px; border-top-right-radius: 24px;
-            padding: 20px 20px calc(20px + var(--safe-area-bottom));
-            z-index: 100; transform: translateY(120%); transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column; gap: 15px;
+        .nav-btn {
+            background: transparent; border: none; color: #ccc;
+            padding: 8px 16px; border-radius: 25px; font-weight: 600; font-size: 13px;
+            cursor: pointer; transition: 0.3s;
         }
-        .editor-panel.visible { transform: translateY(0); }
+        .nav-btn.active { background: #fff; color: #000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .panel-title { font-size: 14px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
-        
-        .tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        
-        .tool-item {
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            background: rgba(255,255,255,0.05); padding: 12px 0; border-radius: 12px;
-            color: var(--text-main); cursor: pointer; transition: 0.2s;
+        .btn-ai {
+            width: 40px; height: 40px; border-radius: 50%; border: none;
+            background: var(--primary); color: white; font-size: 18px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(255, 107, 0, 0.4);
         }
-        .tool-item:active { background: rgba(255,255,255,0.15); transform: scale(0.98); }
-        .tool-item i { font-size: 20px; margin-bottom: 2px; }
-        .tool-item span { font-size: 11px; font-weight: 500; }
-        .tool-item.primary { background: var(--accent); color: white; }
 
-        /* 3. Loading Overlay */
+        /* --- 4. LOADING SPINNER --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 9999;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
+            background: #000; z-index: 2000; display: none;
+            align-items: center; justify-content: center; flex-direction: column;
         }
-        .spinner-pro {
-            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--accent); border-radius: 50%;
-            animation: spin 0.8s ease-in-out infinite;
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid var(--primary); border-radius: 50%;
+            animation: spin 1s infinite linear;
         }
-        .loading-text { margin-top: 15px; color: white; font-size: 14px; letter-spacing: 0.5px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Animation */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Helper Classes */
-        .hidden { display: none !important; }
-        .hide-ui .top-bar, .hide-ui .editor-panel { opacity: 0; pointer-events: none; }
-
-        /* Tutorial Gesture Hint */
-        .gesture-hint {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 90; pointer-events: none; opacity: 0; transition: 0.5s;
-            text-align: center; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        /* --- 5. MENU AI STUDIO (Gọn gàng bên dưới) --- */
+        .ai-panel {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: var(--bg-panel); border-radius: 20px 20px 0 0;
+            padding: 20px; z-index: 200; transform: translateY(110%);
+            transition: transform 0.3s ease; display: flex; flex-direction: column; gap: 15px;
         }
-        .gesture-hint i { font-size: 48px; margin-bottom: 10px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
+        .ai-panel.visible { transform: translateY(0); }
+        .ai-panel h3 { color: white; margin: 0 0 10px 0; font-size: 16px; text-align: center; }
+
+        .btn-full {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-upload { background: #333; color: white; border: 1px solid #555; }
+        .btn-save { background: #27ae60; color: white; }
+        .close-panel { position: absolute; top: 15px; right: 20px; color: #888; cursor: pointer; }
 
     </style>
 </head>
 <body>
 
 <div id="loader">
-    <div class="spinner-pro"></div>
-    <div class="loading-text" id="loader-msg">Đang xử lý AI...</div>
+    <div class="spinner"></div>
+    <p style="color: #888; margin-top: 10px; font-size: 12px;">ĐANG TẢI DỮ LIỆU...</p>
+</div>
+
+<div id="intro-overlay">
+    <video id="v-intro" autoplay muted loop playsinline>
+        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
+    </video>
+    <div class="skip-btn" onclick="closeIntro()">BẮT ĐẦU <i class="fas fa-arrow-right"></i></div>
 </div>
 
 <div class="top-bar">
-    <div class="nav-pill">
-        <button class="nav-btn active" onclick="App.switchTab('vr')">VR Tour</button>
-        <button class="nav-btn" onclick="App.switchTab('shop')">Gian Hàng</button>
+    <div class="nav-switch">
+        <button class="nav-btn active" id="btn-vr" onclick="loadTour('vr')">VR Tour</button>
+        <button class="nav-btn" id="btn-shop" onclick="loadTour('shop')">Gian Hàng</button>
     </div>
-    <div style="display: flex; gap: 10px;">
-        <button class="action-btn" onclick="App.toggleUI()" title="Chế độ xem (Ẩn UI)"><i class="fas fa-eye"></i></button>
-        <button class="action-btn" onclick="App.toggleEditor()" style="background: var(--accent); border-color: var(--accent);"><i class="fas fa-magic"></i></button>
-    </div>
+    <button class="btn-ai" onclick="toggleAI()"><i class="fas fa-magic"></i></button>
 </div>
 
-<div id="layer-vr">
-    <div id="tab-vr" class="tab-content active">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" allow="accelerometer; gyroscope; magnetometer"></iframe>
-    </div>
-    <div id="tab-shop" class="tab-content">
-        <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
-    </div>
+<div id="vr-container">
+    <iframe id="main-frame" src="" allowfullscreen></iframe>
 </div>
 
 <canvas id="ui-canvas"></canvas>
 
-<div id="gesture-hint" class="gesture-hint">
-    <i class="fas fa-hand-pointer"></i>
-    <p>Chạm để di chuyển<br>Hai ngón để xoay & phóng to</p>
-</div>
-
-<div class="editor-panel" id="editor">
-    <div class="panel-header">
-        <span class="panel-title">AI Studio</span>
-        <i class="fas fa-chevron-down" style="color:white; padding: 10px; cursor: pointer;" onclick="App.toggleEditor()"></i>
-    </div>
+<div class="ai-panel" id="ai-panel">
+    <i class="fas fa-times close-panel" onclick="toggleAI()"></i>
+    <h3>STUDIO AI</h3>
     
-    <div class="tools-grid">
-        <input type="file" id="inp-user" accept="image/*" hidden onchange="AIProcessor.handleInput(this)">
-        <input type="file" id="inp-bg" accept="image/*" hidden onchange="Editor.setBackground(this)">
+    <button class="btn-full btn-upload" onclick="document.getElementById('inp-file').click()">
+        <i class="fas fa-user-plus"></i> Tải ảnh lên & Tách nền
+    </button>
+    <input type="file" id="inp-file" hidden accept="image/*" onchange="processAI(this)">
 
-        <div class="tool-item primary" onclick="document.getElementById('inp-user').click()">
-            <i class="fas fa-user-plus"></i>
-            <span>Thêm Người</span>
-        </div>
-        
-        <div class="tool-item" onclick="Editor.flipCharacter()">
-            <i class="fas fa-exchange-alt"></i>
-            <span>Lật Ảnh</span>
-        </div>
-
-        <div class="tool-item" onclick="document.getElementById('inp-bg').click()">
-            <i class="far fa-image"></i>
-            <span>Đổi Nền</span>
-        </div>
-
-        <div class="tool-item" onclick="Editor.saveImage()">
-            <i class="fas fa-download"></i>
-            <span>Lưu Ảnh</span>
-        </div>
-    </div>
-    <div style="text-align: center; color: var(--text-sub); font-size: 10px; margin-top: 5px;">
-        Mẹo: Ẩn giao diện (nút con mắt) rồi chụp màn hình điện thoại để có ảnh VR đẹp nhất.
+    <div id="ai-controls" style="display:none; text-align: center;">
+        <p style="color: #aaa; font-size: 12px; margin: 10px 0;">Kéo thả để di chuyển - 2 ngón tay để zoom</p>
+        <button class="btn-full btn-save" onclick="saveImage()">
+            <i class="fas fa-download"></i> Lưu Bưu Thiếp
+        </button>
     </div>
 </div>
 
 <script>
-/**
- * PROFESSIONAL JS ARCHITECTURE
- * Module 1: State Management
- * Module 2: AI Processing (RemoveBG)
- * Module 3: Canvas Rendering & Transformations
- * Module 4: Input Handling (Multi-touch)
- * Module 5: App Logic
- */
-
-const CONFIG = {
-    API_KEY: "FtyKLHXkG5By3gFBCBcoTACC", // Thay bằng key xịn của bạn
-    MAX_SCALE: 3.0,
-    MIN_SCALE: 0.2
-};
-
-// --- CLASS: STATE MANAGEMENT ---
-class Store {
-    constructor() {
-        this.img = null; // Character Image
-        this.bg = null;  // Background Image (Optional)
-        this.x = 0; this.y = 0;
-        this.scale = 1;
-        this.rotation = 0; // Đơn vị: radian
-        this.isFlipped = false;
-        this.canvas = document.getElementById('ui-canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.resize();
-    }
+    // --- CẤU HÌNH LINK TOUR ---
+    const LINKS = {
+        vr: "https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c",
+        shop: "https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"
+    };
     
-    resize() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+    const API_KEY = "FtyKLHXkG5By3gFBCBcoTACC"; // Key remove.bg của bạn
+    let currentTab = 'vr';
+
+    // Khởi tạo
+    window.onload = () => {
+        resizeCanvas();
+        // Preload tour VR ban đầu nhưng chưa chạy video intro xong thì chưa hiện vội
+        // Nhưng logic intro của bạn là overlay, nên ta cứ load iframe ở dưới
+        document.getElementById('main-frame').src = LINKS.vr;
+    };
+    window.onresize = resizeCanvas;
+
+    // --- XỬ LÝ CHUYỂN TAB (FIX LỖI ĐEN MÀN HÌNH) ---
+    function loadTour(type) {
+        if (currentTab === type) return; // Đang ở tab này rồi thì thôi
+        
+        closeIntro(); // Đảm bảo tắt intro
+        
+        // 1. Hiện loading để che đi lúc iframe load lại
+        const loader = document.getElementById('loader');
+        loader.style.display = 'flex';
+
+        // 2. Cập nhật nút active
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + type).classList.add('active');
+
+        // 3. Reset src của iframe (Kỹ thuật Unload để giải phóng WebGL cũ)
+        const iframe = document.getElementById('main-frame');
+        iframe.src = "about:blank"; // Xóa trắng iframe
+
+        setTimeout(() => {
+            // 4. Load link mới sau 100ms
+            iframe.src = LINKS[type];
+            currentTab = type;
+            
+            // Tắt loading khi iframe load xong (ước lượng hoặc sự kiện onload)
+            iframe.onload = () => {
+                loader.style.display = 'none';
+            };
+        }, 100);
     }
-}
 
-const store = new Store();
+    function closeIntro() {
+        const intro = document.getElementById('intro-overlay');
+        if(intro) {
+            intro.style.opacity = 0;
+            document.getElementById('v-intro').pause();
+            setTimeout(() => intro.remove(), 500);
+        }
+    }
 
-// --- CLASS: AI PROCESSOR ---
-class AIProcessor {
-    static async handleInput(input) {
+    // --- AI & CANVAS LOGIC ---
+    const canvas = document.getElementById('ui-canvas');
+    const ctx = canvas.getContext('2d');
+    let aiImg = null;
+    let imgState = { x: 0, y: 0, w: 0, h: 0, scale: 1 };
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawAI();
+    }
+
+    function toggleAI() {
+        closeIntro();
+        document.getElementById('ai-panel').classList.toggle('visible');
+    }
+
+    async function processAI(input) {
         if (!input.files[0]) return;
         
-        App.showLoader(true, "AI đang tách nền...");
-        const file = input.files[0];
+        // Hiện loading
+        const loader = document.getElementById('loader');
+        loader.innerHTML = '<div class="spinner"></div><p style="color:white; margin-top:10px">AI ĐANG TÁCH NỀN...</p>';
+        loader.style.display = 'flex';
 
-        // Chiến thuật: Thử gọi API, nếu lỗi thì dùng ảnh gốc (Fallback)
+        const formData = new FormData();
+        formData.append("image_file", input.files[0]);
+
         try {
-            const formData = new FormData();
-            formData.append("image_file", file);
-            
             const res = await fetch("https://api.remove.bg/v1.0/removebg", {
-                method: "POST",
-                headers: { "X-Api-Key": CONFIG.API_KEY },
-                body: formData
+                method: "POST", headers: { "X-Api-Key": API_KEY }, body: formData
             });
-
-            if (res.status === 402) throw new Error("Hết lượt miễn phí.");
-            if (!res.ok) throw new Error("Lỗi Server.");
-
+            
+            if(!res.ok) throw new Error("Lỗi API");
+            
             const blob = await res.blob();
-            await this.loadImage(blob);
-            
-        } catch (err) {
-            console.warn("AI Fail, using raw:", err);
-            Swal.fire({
-                icon: 'warning',
-                title: 'Chế độ Offline',
-                text: 'Hệ thống AI đang bận hoặc hết lượt. Sẽ sử dụng ảnh gốc.',
-                toast: true, position: 'top', timer: 3000, showConfirmButton: false
-            });
-            await this.loadImage(file);
-        } finally {
-            App.showLoader(false);
-            // Reset state
-            store.scale = 1; store.rotation = 0; store.isFlipped = false;
-            // Center image
-            const ratio = store.img.width / store.img.height;
-            const h = store.canvas.height * 0.5;
-            store.scale = h / store.img.height;
-            store.x = store.canvas.width / 2;
-            store.y = store.canvas.height / 2 + 50;
-            
-            Editor.render();
-            App.showGestureHint();
+            const img = new Image();
+            img.onload = () => {
+                aiImg = img;
+                // Căn giữa ảnh
+                const ratio = img.width / img.height;
+                imgState.h = canvas.height * 0.6; 
+                imgState.w = imgState.h * ratio;
+                imgState.x = (canvas.width - imgState.w) / 2;
+                imgState.y = canvas.height - imgState.h - 50;
+                
+                // Bật chế độ thao tác
+                canvas.style.pointerEvents = "auto"; // Cho phép chạm vào canvas để kéo ảnh
+                document.getElementById('ai-controls').style.display = "block";
+                
+                loader.style.display = 'none';
+                drawAI();
+            };
+            img.src = URL.createObjectURL(blob);
+
+        } catch (e) {
+            alert("Lỗi hoặc hết lượt Free API. Dùng ảnh gốc.");
+            loader.style.display = 'none';
         }
     }
 
-    static loadImage(src) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                store.img = img;
-                resolve();
-            };
-            img.src = (src instanceof Blob || src instanceof File) ? URL.createObjectURL(src) : src;
-        });
-    }
-}
-
-// --- CLASS: EDITOR (RENDER & LOGIC) ---
-class Editor {
-    static render() {
-        const { ctx, canvas, img, bg, x, y, scale, rotation, isFlipped } = store;
+    function drawAI() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // 1. Draw BG (Mode Bưu Thiếp)
-        if (bg) {
-            const bgRatio = Math.max(canvas.width / bg.width, canvas.height / bg.height);
-            const cx = (canvas.width - bg.width * bgRatio) / 2;
-            const cy = (canvas.height - bg.height * bgRatio) / 2;
-            ctx.drawImage(bg, cx, cy, bg.width * bgRatio, bg.height * bgRatio);
-        }
-
-        // 2. Draw Character
-        if (img) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(rotation);
-            ctx.scale(isFlipped ? -scale : scale, scale);
-            
-            // Bóng đổ xịn
-            ctx.shadowColor = "rgba(0,0,0,0.4)";
-            ctx.shadowBlur = 20;
-            ctx.shadowOffsetY = 15;
-
-            // Draw centered
-            ctx.drawImage(img, -img.width/2, -img.height/2);
-            ctx.restore();
+        if (aiImg) {
+            ctx.drawImage(aiImg, imgState.x, imgState.y, imgState.w, imgState.h);
         }
     }
 
-    static flipCharacter() {
-        if (!store.img) return;
-        store.isFlipped = !store.isFlipped;
-        this.render();
-    }
+    // --- THAO TÁC KÉO THẢ (TOUCH) ---
+    let isDragging = false;
+    let startX, startY;
 
-    static setBackground(input) {
-        if (!input.files[0]) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                store.bg = img;
-                this.render();
-                Swal.fire({ icon: 'success', title: 'Đã đổi nền', toast: true, position: 'top', timer: 2000, showConfirmButton: false });
-            };
-            img.src = e.target.result;
+    canvas.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        // Kiểm tra xem có chạm vào ảnh không
+        if (touch.clientX >= imgState.x && touch.clientX <= imgState.x + imgState.w &&
+            touch.clientY >= imgState.y && touch.clientY <= imgState.y + imgState.h) {
+            isDragging = true;
+            startX = touch.clientX - imgState.x;
+            startY = touch.clientY - imgState.y;
         }
-        reader.readAsDataURL(input.files[0]);
-    }
+    });
 
-    static saveImage() {
-        if (!store.img) return Swal.fire('Chưa có ảnh', 'Vui lòng chọn ảnh người trước.', 'info');
-        
-        // Check if BG exists or confirm transparent
-        if (!store.bg) {
-            Swal.fire({
-                title: 'Lưu ảnh trong suốt?',
-                text: "Bạn chưa chọn nền. Hệ thống không thể chụp cảnh VR (do bảo mật). Bạn có muốn lưu ảnh nhân vật tách nền về máy không?",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Tải về',
-                cancelButtonText: 'Hủy'
-            }).then((result) => {
-                if (result.isConfirmed) this.downloadCanvas();
-            });
-        } else {
-            this.downloadCanvas();
+    canvas.addEventListener('touchmove', e => {
+        if (isDragging) {
+            e.preventDefault(); // Chặn cuộn trang
+            const touch = e.touches[0];
+            imgState.x = touch.clientX - startX;
+            imgState.y = touch.clientY - startY;
+            drawAI();
+        }
+    });
+
+    canvas.addEventListener('touchend', () => isDragging = false);
+
+    // --- LƯU ẢNH ---
+    function saveImage() {
+        // Cảnh báo về việc không chụp được iframe
+        if(confirm("Lưu ý: Do bảo mật trình duyệt, chức năng này sẽ lưu ảnh nhân vật (nền trong suốt). Bạn hãy dùng chức năng 'Chụp màn hình' của điện thoại để có cả cảnh nền 360 đẹp nhất nhé!")) {
+            const link = document.createElement('a');
+            link.download = 'nhan-vat-ai.png';
+            link.href = canvas.toDataURL();
+            link.click();
         }
     }
-
-    static downloadCanvas() {
-        const link = document.createElement('a');
-        link.download = `NinhThuan_Studio_${Date.now()}.png`;
-        link.href = store.canvas.toDataURL('image/png', 1.0);
-        link.click();
-    }
-}
-
-// --- CLASS: INPUT MANAGER (TOUCH LOGIC) ---
-class InputManager {
-    constructor() {
-        this.active = false;
-        this.startP = []; // Touch points
-        this.startState = {}; // Snapshot of state at touch start
-        
-        const el = store.canvas;
-        el.addEventListener('touchstart', this.onStart.bind(this), {passive: false});
-        el.addEventListener('touchmove', this.onMove.bind(this), {passive: false});
-        el.addEventListener('touchend', () => this.active = false);
-        
-        // Mouse support for Desktop testing
-        el.addEventListener('mousedown', (e) => {
-            this.onStart({touches: [{clientX: e.clientX, clientY: e.clientY}], preventDefault: ()=>{}});
-        });
-        window.addEventListener('mousemove', (e) => {
-            if(this.active) this.onMove({touches: [{clientX: e.clientX, clientY: e.clientY}], preventDefault: ()=>{}});
-        });
-        window.addEventListener('mouseup', () => this.active = false);
-    }
-
-    onStart(e) {
-        if (!store.img) return;
-        // Basic Hit Test (Giả lập vùng bao quanh tâm)
-        // Trong thực tế cần tính ma trận transform ngược, nhưng ở đây dùng khoảng cách cho đơn giản
-        // Nếu chạm vào màn hình thì assume là muốn điều khiển (UX tốt hơn cho mobile)
-        
-        this.active = true;
-        this.startP = Array.from(e.touches).map(t => ({x: t.clientX, y: t.clientY}));
-        this.startState = { 
-            x: store.x, y: store.y, 
-            scale: store.scale, 
-            rotation: store.rotation 
-        };
-    }
-
-    onMove(e) {
-        if (!this.active) return;
-        e.preventDefault(); // Stop scrolling
-        
-        const touches = Array.from(e.touches);
-        
-        // 1 Finger: Drag
-        if (touches.length === 1 && this.startP.length === 1) {
-            const dx = touches[0].clientX - this.startP[0].x;
-            const dy = touches[0].clientY - this.startP[0].y;
-            store.x = this.startState.x + dx;
-            store.y = this.startState.y + dy;
-        }
-        
-        // 2 Fingers: Scale & Rotate
-        if (touches.length === 2 && this.startP.length === 2) {
-            // Calc current vector
-            const v1 = { x: touches[1].clientX - touches[0].clientX, y: touches[1].clientY - touches[0].clientY };
-            const len1 = Math.hypot(v1.x, v1.y);
-            const angle1 = Math.atan2(v1.y, v1.x);
-
-            // Calc start vector
-            const v0 = { x: this.startP[1].x - this.startP[0].x, y: this.startP[1].y - this.startP[0].y };
-            const len0 = Math.hypot(v0.x, v0.y);
-            const angle0 = Math.atan2(v0.y, v0.x);
-
-            // Apply
-            const newScale = this.startState.scale * (len1 / len0);
-            store.scale = Math.max(CONFIG.MIN_SCALE, Math.min(CONFIG.MAX_SCALE, newScale));
-            store.rotation = this.startState.rotation + (angle1 - angle0);
-            
-            // Move center point to follow fingers
-            const center0 = { x: (this.startP[0].x + this.startP[1].x)/2, y: (this.startP[0].y + this.startP[1].y)/2 };
-            const center1 = { x: (touches[0].clientX + touches[1].clientX)/2, y: (touches[0].clientY + touches[1].clientY)/2 };
-            store.x = this.startState.x + (center1.x - center0.x);
-            store.y = this.startState.y + (center1.y - center0.y);
-        }
-        
-        requestAnimationFrame(Editor.render.bind(Editor));
-    }
-}
-
-// --- CLASS: APP CONTROLLER ---
-class App {
-    static init() {
-        this.inputMgr = new InputManager();
-        window.addEventListener('resize', () => {
-            store.resize();
-            Editor.render();
-        });
-        // Intro video
-        // (Bỏ qua logic intro phức tạp ở bản này để tập trung vào tính năng, 
-        // giả sử video intro nằm ở layer trên cùng nếu cần)
-    }
-
-    static switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-        
-        document.getElementById('tab-' + tabId).classList.add('active');
-        // Update Nav visual active state (Logic đơn giản)
-        event.target.classList.add('active');
-    }
-
-    static toggleEditor() {
-        document.getElementById('editor').classList.toggle('visible');
-    }
-
-    static toggleUI() {
-        document.body.classList.toggle('hide-ui');
-        if (document.body.classList.contains('hide-ui')) {
-            Swal.fire({
-                text: 'Chạm vào màn hình để hiện lại menu',
-                toast: true, position: 'bottom', timer: 2000, showConfirmButton: false,
-                background: 'rgba(0,0,0,0.8)', color: '#fff'
-            });
-            
-            // One-time listener to restore UI
-            const restore = () => {
-                document.body.classList.remove('hide-ui');
-                window.removeEventListener('touchstart', restore);
-                window.removeEventListener('mousedown', restore);
-            };
-            setTimeout(() => {
-                window.addEventListener('touchstart', restore);
-                window.addEventListener('mousedown', restore);
-            }, 500);
-        }
-    }
-
-    static showLoader(show, msg = "") {
-        const el = document.getElementById('loader');
-        if(show) {
-            el.style.display = 'flex';
-            document.getElementById('loader-msg').innerText = msg;
-        } else {
-            el.style.display = 'none';
-        }
-    }
-    
-    static showGestureHint() {
-        const h = document.getElementById('gesture-hint');
-        h.style.opacity = 1;
-        setTimeout(() => h.style.opacity = 0, 4000);
-    }
-}
-
-// Start App
-App.init();
-
 </script>
 </body>
 </html>
