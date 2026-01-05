@@ -3,47 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI</title>
+    <title>Ninh Thuận AI - Fix Lag</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@latest/dist/index.js"></script>
-    
     <style>
-        :root { --primary: #ff9800; --glass: rgba(255, 255, 255, 0.9); }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #000; }
+        :root { --primary: #ff9800; --glass: rgba(255, 255, 255, 0.95); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
         
-        /* Iframe layers */
+        /* Iframe */
         .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         .pano-page.active { display: block; z-index: 10; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Canvas cho ảnh AI */
+        /* Canvas */
         #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
 
-        /* UI Controls */
+        /* Buttons */
         .top-btns { position: absolute; top: 15px; left: 15px; z-index: 10000; display: flex; gap: 10px; }
-        .round-btn { width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        
-        .controls { position: absolute; top: 75px; left: 15px; z-index: 9000; width: 260px; background: var(--glass); padding: 15px; border-radius: 15px; display: none; }
+        .round-btn { width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 12px; }
+        .round-btn:active { transform: scale(0.9); }
+
+        /* Menu AI */
+        .controls { position: absolute; top: 75px; left: 15px; z-index: 9000; width: 250px; background: var(--glass); padding: 15px; border-radius: 15px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .controls.show { display: block; }
 
-        /* Loading Spinner */
-        #loading { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.9); z-index: 20000; 
-            display: none; flex-direction: column; align-items: center; justify-content: center; color: white; 
-        }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
         .loader { width: 40px; height: 40px; border: 4px solid #fff; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        .label-btn { display: block; padding: 10px; background: var(--primary); color: white; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; }
+        
+        .label-btn { display: block; padding: 12px; background: var(--primary); color: white; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; margin-bottom: 5px; text-decoration: none; border: none; width: 100%; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div id="loading">
-    <div class="loader"></div>
-    <p id="status-text">Đang tải dữ liệu AI...</p>
-</div>
+<div id="loading"><div class="loader"></div><p id="load-status">Đang xử lý AI...</p></div>
 
 <div class="top-btns">
     <button class="round-btn" onclick="switchTab('vr')">VR</button>
@@ -51,91 +43,111 @@
     <button class="round-btn" onclick="toggleAI()">AI</button>
 </div>
 
-<div id="page-vr" class="pano-page active">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe>
-</div>
-<div id="page-shop" class="pano-page">
-    <iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe>
-</div>
+<div id="page-vr" class="pano-page active"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c"></iframe></div>
+<div id="page-shop" class="pano-page"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe></div>
 
 <div class="controls" id="ai-menu">
-    <h3 style="margin: 0 0 10px 0; font-size: 16px;">STUDIO NINH THUẬN AI</h3>
-    <label for="input-file" class="label-btn">📸 Chọn ảnh của bạn</label>
-    <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="processAI(this)">
+    <h3 style="margin:0 0 10px 0; font-size:16px; color:#333;">NINH THUẬN AI</h3>
+    <label for="input-file" class="label-btn">📸 Chọn ảnh người</label>
+    <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="startAI(this)">
     
-    <div id="edit-area" style="display: none; margin-top: 10px;">
-        <label style="font-size: 12px;">Chỉnh kích thước:</label>
-        <input type="range" id="size-slider" min="0.2" max="2.5" step="0.05" value="1.0" style="width:100%" oninput="drawCanvas()">
-        <button class="label-btn" style="background:#27ae60; width:100%; border:none; margin-top:10px;" onclick="saveImage()">💾 Lưu bưu thiếp</button>
+    <div id="edit-area" style="display: none; margin-top:10px;">
+        <input type="range" id="size-slider" min="0.2" max="2.0" step="0.01" value="1.0" style="width:100%" oninput="drawCanvas()">
+        <button class="label-btn" style="background:#2ecc71; margin-top:10px;" onclick="takeSnap()">💾 Lưu bưu thiếp</button>
     </div>
 </div>
 
 <canvas id="ui-canvas"></canvas>
 
 <script>
+    // Chỉ nạp thư viện AI khi cần thiết để tránh treo trang
+    let aiModule = null;
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
     let userImg = null;
 
-    window.onload = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     function switchTab(tab) {
-        document.querySelectorAll('.pano-page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-' + tab).classList.add('active');
+        document.querySelectorAll('.pano-page').forEach(p => p.style.display = 'none');
+        document.getElementById('page-' + tab).style.display = 'block';
     }
 
     function toggleAI() {
-        document.getElementById('ai-menu').classList.toggle('show');
+        const menu = document.getElementById('ai-menu');
+        menu.classList.toggle('show');
     }
 
-    async function processAI(input) {
+    // Hàm khởi tạo thư viện AI khi người dùng chọn ảnh
+    async function startAI(input) {
         if (!input.files[0]) return;
-        const loading = document.getElementById('loading');
-        loading.style.display = 'flex';
-
+        const loader = document.getElementById('loading');
+        loader.style.display = 'flex';
+        
         try {
-            // Cấu hình để không bị trắng màn hình (PublicPath rất quan trọng)
+            // Nạp thư viện động nếu chưa có
+            if (!window.imglyRemoveBackground) {
+                document.getElementById('load-status').innerText = "Đang tải bộ não AI (10MB)...";
+                await loadScript("https://cdn.jsdelivr.net/npm/@imgly/background-removal@latest/dist/index.js");
+            }
+
             const config = {
                 publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@latest/dist/",
-                device: 'cpu', // Chế độ an toàn cho di động
-                model: 'medium'
+                device: 'cpu'
             };
 
-            const imageFile = input.files[0];
-            const resultBlob = await imglyRemoveBackground(imageFile, config);
-            
-            const img = new Image();
-            img.onload = () => {
-                userImg = img;
+            const blob = await imglyRemoveBackground(input.files[0], config);
+            userImg = new Image();
+            userImg.onload = () => {
                 document.getElementById('edit-area').style.display = 'block';
-                loading.style.display = 'none';
+                loader.style.display = 'none';
                 drawCanvas();
             };
-            img.src = URL.createObjectURL(resultBlob);
-        } catch (error) {
-            console.error(error);
-            alert("Lỗi tải AI. Hãy thử lại hoặc dùng Chrome/Safari.");
-            loading.style.display = 'none';
+            userImg.src = URL.createObjectURL(blob);
+        } catch (err) {
+            alert("Thiết bị không đủ bộ nhớ để chạy AI. Hãy thử ảnh nhỏ hơn.");
+            loader.style.display = 'none';
         }
     }
 
     function drawCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!userImg) return;
-
-        const scale = document.getElementById('size-slider').value;
+        const s = document.getElementById('size-slider').value;
         const ratio = userImg.width / userImg.height;
-        const h = canvas.height * 0.6 * scale;
+        const h = canvas.height * 0.5 * s;
         const w = h * ratio;
-        
-        ctx.drawImage(userImg, (canvas.width - w) / 2, canvas.height - h - 20, w, h);
+        ctx.drawImage(userImg, (canvas.width - w)/2, canvas.height - h - 20, w, h);
     }
 
-    function saveImage() {
+    function takeSnap() {
         document.getElementById('ai-menu').classList.remove('show');
         setTimeout(() => {
             html2canvas(document.body, { useCORS: true }).then(c => {
-                const link = document.createElement('a
+                const a = document.createElement('a');
+                a.download = 'ninhthuan-ai.png';
+                a.href = c.toDataURL();
+                a.click();
+            });
+        }, 500);
+    }
+
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+
+    window.onresize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawCanvas();
+    };
+</script>
+</body>
+</html>
