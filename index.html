@@ -3,91 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studio AI - Xóa Nền Tự Động</title>
+    <title>Ninh Thuận AI - Studio</title>
     <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: #2d2d2d; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; max-width: 600px; width: 90%; }
-        h1 { color: #ffcc00; margin-bottom: 20px; }
-        .upload-box { border: 2px dashed #555; padding: 30px; border-radius: 10px; cursor: pointer; transition: 0.3s; margin-bottom: 20px; position: relative; }
-        .upload-box:hover { border-color: #ffcc00; background: #363636; }
-        #image-input { display: none; }
-        .btn { background: #ffcc00; color: #000; padding: 12px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin: 10px; }
-        .btn:hover { background: #e6b800; }
-        .preview-container { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
-        img { max-width: 100%; border-radius: 8px; border: 1px solid #444; max-height: 250px; }
-        /* Hiệu ứng xoay khi đang xử lý */
-        .loading { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); border-radius: 10px; flex-direction: column; justify-content: center; align-items: center; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #ffcc00; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
+        
+        /* Hình nền toàn cảnh Ninh Thuận như trong ảnh của bạn */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://monheo89-droid.github.io/ninhthuan-ai/assets/bg.jpg') no-repeat center center;
+            background-size: cover;
+            z-index: -1;
+        }
+
+        /* Giao diện nút bấm bên trái */
+        .sidebar {
+            position: absolute;
+            top: 20%;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            width: 200px;
+        }
+
+        .sidebar h2 { color: #ffcc00; margin: 0 0 15px 0; font-size: 20px; }
+
+        .btn-upload {
+            background: #8b5a2b; /* Màu nâu như trong ảnh */
+            color: #ffcc00;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: 0.3s;
+        }
+
+        .btn-upload:hover { background: #a67c52; }
+
+        /* Vùng hiển thị nhân vật sau khi tách nền */
+        #person-container {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 400px;
+            z-index: 10;
+        }
+
+        #person-img { width: 100%; display: none; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
+
+        /* Overlay thông báo đang xử lý (Fix lỗi treo cứng) */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ffcc00;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>STUDIO AI</h1>
-    <div class="upload-box" id="drop-zone" onclick="document.getElementById('image-input').click()">
-        <p id="status-text">Kéo thả hoặc Click để TẢI ẢNH NGƯỜI</p>
-        <input type="file" id="image-input" accept="image/*">
-        
-        <div class="loading" id="loader">
-            <div class="spinner"></div>
-            <p>AI ĐANG TÁCH NỀN...</p>
-        </div>
+    <div class="background"></div>
+
+    <div class="sidebar">
+        <h2>STUDIO AI</h2>
+        <button class="btn-upload" onclick="document.getElementById('file-input').click()">
+            TẢI ẢNH NGƯỜI
+        </button>
+        <input type="file" id="file-input" style="display: none;" accept="image/*">
     </div>
 
-    <div class="preview-container">
-        <div id="result-area" style="display: none;">
-            <h3>Kết quả:</h3>
-            <img id="output-image" src="" alt="Kết quả">
-            <br>
-            <button class="btn" id="download-btn">TẢI XUỐNG ẢNH</button>
-        </div>
+    <div id="person-container">
+        <img id="person-img" src="" alt="Nhân vật">
     </div>
-</div>
 
-<script>
-    const imageInput = document.getElementById('image-input');
-    const outputImage = document.getElementById('output-image');
-    const resultArea = document.getElementById('result-area');
-    const loader = document.getElementById('loader');
-    const downloadBtn = document.getElementById('download-btn');
-    const statusText = document.getElementById('status-text');
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text">ĐANG TÁCH NỀN...</p>
+    </div>
 
-    imageInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const personImg = document.getElementById('person-img');
+        const loader = document.getElementById('loading-overlay');
 
-        // 1. Hiển thị trạng thái đang xử lý
-        loader.style.display = 'flex';
-        statusText.innerText = "Đang xử lý file: " + file.name;
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        try {
-            // 2. Gọi thư viện tách nền (Xử lý Offline ngay tại trình duyệt)
-            // Không tốn phí, không giới hạn lượt dùng
-            const blob = await imglyRemoveBackground(file);
+            // 1. Hiện thông báo đang xử lý
+            loader.style.display = 'flex';
 
-            // 3. Hiển thị kết quả
-            const url = URL.createObjectURL(blob);
-            outputImage.src = url;
-            resultArea.style.display = 'block';
+            try {
+                // 2. Xử lý xóa nền offline bằng thư viện @imgly
+                // Không gọi API bên ngoài, không lo hết lượt (lỗi 402)
+                const blob = await imglyRemoveBackground(file);
+                
+                // 3. Hiển thị ảnh kết quả
+                const url = URL.createObjectURL(blob);
+                personImg.src = url;
+                personImg.style.display = 'block';
 
-            // 4. Cấu hình nút tải xuống
-            downloadBtn.onclick = () => {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'ai-remove-bg.png';
-                link.click();
-            };
-
-        } catch (error) {
-            console.error("Lỗi:", error);
-            alert("Có lỗi xảy ra khi AI tách nền. Hãy thử ảnh khác!");
-        } finally {
-            loader.style.display = 'none';
-        }
-    });
-</script>
-
+            } catch (error) {
+                console.error("Lỗi xử lý:", error);
+                alert("Không thể tách nền ảnh này. Vui lòng thử ảnh khác!");
+            } finally {
+                // 4. Luôn ẩn loading khi xong hoặc lỗi để tránh treo web
+                loader.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
