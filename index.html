@@ -2,25 +2,25 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ninh Thuận AI - Studio Fix</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ninh Thuận AI - Studio Final</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #ff9800; --success: #2ecc71; --glass: rgba(255, 255, 255, 0.95); }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #000; }
         
-        /* Chống treo nút - Tối ưu layer */
+        /* Layers */
         .pano-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         .pano-page.active { display: block; z-index: 5; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Canvas phải nằm trên cùng để hiển thị người */
-        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none; }
+        /* Canvas - Quan trọng: pointer-events: auto để di chuyển người */
+        #ui-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: auto; cursor: move; }
 
         .top-btns { position: absolute; top: 15px; left: 15px; z-index: 10000; display: flex; gap: 10px; }
         .round-btn { width: 50px; height: 50px; background: var(--primary); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-        .controls { position: absolute; top: 75px; left: 15px; z-index: 9000; width: 260px; background: var(--glass); padding: 15px; border-radius: 15px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .controls { position: absolute; top: 75px; left: 15px; z-index: 9000; width: 280px; background: var(--glass); padding: 15px; border-radius: 15px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .controls.show { display: block; }
 
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
@@ -28,12 +28,13 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         .btn-action { display: block; width: 100%; padding: 12px; background: var(--primary); color: white; border-radius: 8px; text-align: center; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
-        #size-slider { width: 100%; accent-color: var(--primary); margin: 10px 0; }
+        input[type=range] { width: 100%; accent-color: var(--primary); margin: 10px 0; }
+        .hint { font-size: 11px; color: #666; text-align: center; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div id="loading"><div class="loader"></div><p>AI đang tách nền từ Cloud...</p></div>
+<div id="loading"><div class="loader"></div><p id="load-text">Đang tách nền...</p></div>
 
 <div class="top-btns">
     <button class="round-btn" onclick="switchTab('vr')">VR</button>
@@ -45,14 +46,15 @@
 <div id="page-shop" class="pano-page"><iframe src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb"></iframe></div>
 
 <div class="controls" id="ai-menu">
-    <h3 style="margin:0 0 10px 0; font-size:16px;">STUDIO NINH THUẬN</h3>
-    <label for="input-file" class="btn-action">📸 Chọn ảnh của bạn</label>
+    <h3 style="margin:0 0 10px 0; font-size:16px; text-align:center;">NINH THUẬN STUDIO AI</h3>
+    <label for="input-file" class="btn-action">📸 Chọn ảnh người</label>
     <input type="file" id="input-file" accept="image/*" style="display: none;" onchange="processAI(this)">
     
     <div id="edit-area" style="display: none;">
-        <p style="font-size: 12px; margin: 10px 0 0 0;">Kéo để chỉnh kích thước:</p>
-        <input type="range" id="size-slider" min="0.1" max="2.0" step="0.01" value="0.8" oninput="draw()">
-        <button class="btn-action" style="background: var(--success);" onclick="takePhoto()">💾 Lưu bưu thiếp</button>
+        <p style="font-size: 12px; margin: 10px 0 0 0;">Phóng to / Thu nhỏ:</p>
+        <input type="range" id="size-slider" min="0.1" max="3.0" step="0.01" value="0.8" oninput="draw()">
+        <p class="hint">💡 Mẹo: Chạm và kéo người để di chuyển</p>
+        <button class="btn-action" style="background: var(--success);" onclick="save()">💾 Lưu bưu thiếp</button>
     </div>
 </div>
 
@@ -65,6 +67,9 @@
     const canvas = document.getElementById('ui-canvas');
     const ctx = canvas.getContext('2d');
     let userImg = null;
+    let imgPos = { x: 0, y: 0, w: 0, h: 0 };
+    let isDragging = false;
+    let startX, startY;
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -92,17 +97,23 @@
             const data = await response.json();
             
             const img = new Image();
-            img.crossOrigin = "anonymous"; // Sửa lỗi nền đen/trắng khi chụp
+            img.crossOrigin = "anonymous";
             img.onload = () => {
                 userImg = img;
+                const ratio = img.width / img.height;
+                imgPos.h = canvas.height * 0.5;
+                imgPos.w = imgPos.h * ratio;
+                imgPos.x = (canvas.width - imgPos.w) / 2;
+                imgPos.y = canvas.height - imgPos.h - 50;
+                
                 document.getElementById('edit-area').style.display = 'block';
                 document.getElementById('loading').style.display = 'none';
                 draw();
             };
-            // Thêm hiệu ứng tách nền của Cloudinary vào URL
-            img.src = data.secure_url.replace('/upload/', '/upload/e_background_removal/f_png/');
+            // Lệnh tách nền đúng cú pháp cho Cloudinary AI Background Removal
+            img.src = data.secure_url.replace('/upload/', '/upload/e_background_removal/');
         } catch (err) {
-            alert("Lỗi server AI. Vui lòng kiểm tra cấu hình Unsigned.");
+            alert("Lỗi server AI. Hãy kiểm tra kết nối.");
             document.getElementById('loading').style.display = 'none';
         }
     }
@@ -110,27 +121,51 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!userImg) return;
-        const s = document.getElementById('size-slider').value;
-        const h = canvas.height * 0.7 * s;
-        const w = h * (userImg.width / userImg.height);
-        // Vẽ người ở giữa dưới màn hình
-        ctx.drawImage(userImg, (canvas.width - w)/2, canvas.height - h - 10, w, h);
+        const scale = document.getElementById('size-slider').value;
+        ctx.drawImage(userImg, imgPos.x, imgPos.y, imgPos.w * scale, imgPos.h * scale);
     }
 
-    function takePhoto() {
+    // --- LOGIC DI CHUYỂN NGƯỜI (DRAG & DROP) ---
+    function handleStart(e) {
+        const pos = e.touches ? e.touches[0] : e;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = pos.clientX - rect.left;
+        const mouseY = pos.clientY - rect.top;
+
+        const scale = document.getElementById('size-slider').value;
+        if (mouseX >= imgPos.x && mouseX <= imgPos.x + imgPos.w * scale &&
+            mouseY >= imgPos.y && mouseY <= imgPos.y + imgPos.h * scale) {
+            isDragging = true;
+            startX = mouseX - imgPos.x;
+            startY = mouseY - imgPos.y;
+        }
+    }
+
+    function handleMove(e) {
+        if (!isDragging) return;
+        const pos = e.touches ? e.touches[0] : e;
+        const rect = canvas.getBoundingClientRect();
+        imgPos.x = (pos.clientX - rect.left) - startX;
+        imgPos.y = (pos.clientY - rect.top) - startY;
+        draw();
+    }
+
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('touchstart', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('touchend', () => isDragging = false);
+
+    function save() {
         document.getElementById('ai-menu').classList.remove('show');
         document.getElementById('loading').style.display = 'flex';
-        document.querySelector('#loading p').innerText = "Đang tạo bưu thiếp...";
-
+        document.getElementById('load-text').innerText = "Đang tạo bưu thiếp...";
         setTimeout(() => {
-            html2canvas(document.body, { 
-                useCORS: true, 
-                allowTaint: false,
-                backgroundColor: null // Giữ nền trong suốt cho canvas
-            }).then(c => {
+            html2canvas(document.body, { useCORS: true }).then(c => {
                 const a = document.createElement('a');
-                a.download = 'ninh-thuan-ai-studio.png';
-                a.href = c.toDataURL('image/png');
+                a.download = 'ninh-thuan-ai.png';
+                a.href = c.toDataURL();
                 a.click();
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('ai-menu').classList.add('show');
