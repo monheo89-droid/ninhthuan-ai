@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI - Final Stable</title>
+    <title>Ninh Thuận AI - Fix Tour Control</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- CẤU HÌNH --- */
+        /* --- 1. CẤU HÌNH --- */
         :root { --primary: #FF6B00; --glass: rgba(20, 20, 20, 0.9); }
         
         body, html { 
@@ -17,7 +17,7 @@
             touch-action: none; /* Chặn giật lag */
         }
 
-        /* VIEWPORT & IFRAME */
+        /* VIEWPORT */
         .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; }
         .iframe-layer { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; 
@@ -25,15 +25,16 @@
         }
         .iframe-layer.active { z-index: 5; opacity: 1; visibility: visible; }
 
-        /* CANVAS */
+        /* CANVAS - QUAN TRỌNG: MẶC ĐỊNH CHO PHÉP KÉO NGƯỜI */
         #studio-canvas { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             z-index: 50; touch-action: none; pointer-events: auto; 
         }
-        /* Khi chế độ Tour bật: Tắt cảm ứng canvas để xuyên qua */
+
+        /* --- LOGIC FIX LỖI: KHI Ở CHẾ ĐỘ TOUR, CANVAS KHÔNG NHẬN CẢM ỨNG --- */
         body.tour-mode #studio-canvas { pointer-events: none; }
 
-        /* UI BÊN PHẢI (DOCK) */
+        /* UI CONTROLS */
         .right-dock {
             position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
             z-index: 9000; display: flex; flex-direction: column; gap: 12px; align-items: center;
@@ -45,14 +46,17 @@
         .tool-btn:active { transform: scale(0.9); }
         .tool-btn.btn-cam { border: 2px solid white; color: white; background: transparent; }
 
-        /* SWITCHER: NGƯỜI / TOUR */
+        /* SWITCHER: NGƯỜI vs TOUR */
         .mode-switcher { display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 25px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.1); }
-        .mode-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: #666; font-size: 14px; cursor: pointer; transition: 0.3s; }
+        .mode-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: #666; font-size: 15px; cursor: pointer; transition: 0.3s; }
+        
+        /* Active State */
         .mode-btn.active { background: var(--primary); color: #fff; box-shadow: 0 0 8px var(--primary); }
 
-        /* SLIDER DỌC */
+        /* SLIDER */
         .slider-container { height: 120px; width: 40px; display: flex; justify-content: center; padding: 5px 0; }
-        input[type=range] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 6px; height: 100%; background: rgba(255,255,255,0.3); border-radius: 3px; outline: none; pointer-events: auto; }
+        /* Slider vẫn phải nhận cảm ứng ngay cả khi ở chế độ Tour */
+        input[type=range] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 6px; height: 100%; background: rgba(255,255,255,0.3); border-radius: 3px; outline: none; pointer-events: auto !important; }
 
         /* TOP NAV */
         .top-bar { position: absolute; top: 20px; left: 20px; z-index: 100; display: flex; gap: 10px; transition: opacity 0.3s; }
@@ -62,12 +66,12 @@
         /* MASK (CHẾ ĐỘ BƯU THIẾP) */
         #postcard-mask { 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 0; height: 0; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 1); /* Che tối hoàn toàn */
+            width: 0; height: 0; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 1);
             z-index: 9999; pointer-events: none; opacity: 0; transition: opacity 0.5s; 
-            border: 2px dashed rgba(255,255,255,0.5); /* Viền cắt */
+            border: 2px dashed rgba(255,255,255,0.5);
             display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
         }
-        #postcard-mask.active { opacity: 1; width: 45vh; height: 56.25vh; /* Tỷ lệ 4:5 */ }
+        #postcard-mask.active { opacity: 1; width: 45vh; height: 56.25vh; }
         
         .brand-watermark {
             margin-bottom: 15px; color: rgba(255,255,255,0.8); font-weight: 900; font-size: 16px;
@@ -88,7 +92,7 @@
 </head>
 <body>
 
-<div id="loader"><div class="spinner"></div><p style="margin-top:10px;font-size:12px">ĐANG TẢI...</p></div>
+<div id="loader"><div class="spinner"></div><p style="margin-top:10px;font-size:12px">AI ĐANG XỬ LÝ...</p></div>
 <div id="count-layer">3</div>
 <div id="toast-msg" class="toast">Thông báo</div>
 
@@ -103,7 +107,7 @@
 
 <div class="right-dock">
     <div class="mode-switcher">
-        <button class="mode-btn active" id="btn-mode-person" onclick="Studio.setMode('person')" title="Chỉnh Người">
+        <button class="mode-btn active" id="btn-mode-person" onclick="Studio.setMode('person')" title="Di chuyển Người">
             <i class="fas fa-user-edit"></i>
         </button>
         <button class="mode-btn" id="btn-mode-tour" onclick="Studio.setMode('tour')" title="Xoay Tour">
@@ -140,30 +144,20 @@
 const CONFIG = { API_KEY: "FtyKLHXkG5By3gFBCBcoTACC" };
 
 const App = {
-    // Kỹ thuật tải chậm: Bấm nút mới tải Iframe -> Chống treo máy
     start: function() {
         const intro = document.getElementById('intro-layer');
-        intro.style.transition = "opacity 0.5s";
-        intro.style.opacity = 0;
+        intro.style.transition = "opacity 0.5s"; intro.style.opacity = 0;
         document.getElementById('v-intro').pause();
-        
-        setTimeout(() => {
-            intro.remove();
-            App.switch('vr'); // Bắt đầu nạp Tour VR
-        }, 500);
+        setTimeout(() => { intro.remove(); App.switch('vr'); }, 500);
     },
 
     switch: (t) => {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('btn-'+t).classList.add('active');
-        
-        // Ẩn tất cả iframe (dùng visibility: hidden để giảm tải GPU)
         document.querySelectorAll('.iframe-layer').forEach(f => f.classList.remove('active'));
         
         const target = document.getElementById('frame-'+t);
         target.classList.add('active');
-
-        // Nếu chưa tải link thì giờ mới tải (Lazy Load)
         if (!target.src || target.src === "") {
             document.getElementById('loader').style.display = 'flex';
             target.src = target.getAttribute('data-src');
@@ -179,8 +173,8 @@ const App = {
             n--; if(n>0) c.innerText=n;
             else {
                 clearInterval(t); c.style.display='none';
-                document.body.classList.add('capture-mode'); // Ẩn nút
-                m.classList.add('active'); // Hiện khung bưu thiếp
+                document.body.classList.add('capture-mode');
+                m.classList.add('active');
                 setTimeout(()=>{
                     document.body.classList.remove('capture-mode');
                     m.classList.remove('active');
@@ -200,15 +194,13 @@ const Studio = {
     canvas: document.getElementById('studio-canvas'),
     ctx: document.getElementById('studio-canvas').getContext('2d'),
     
-    // Mode mặc định: Chỉnh người
+    // Mode: 'person' (chỉnh người) hoặc 'tour' (xoay cảnh)
     mode: 'person', 
     person: { img:null, x:0, y:0, s:1, f:false },
 
     init: function() {
         this.resize();
         window.onresize = () => { this.resize(); this.draw(); };
-        
-        // Sự kiện cảm ứng
         const evts = {s:['mousedown','touchstart'], m:['mousemove','touchmove'], e:['mouseup','touchend']};
         evts.s.forEach(e => this.canvas.addEventListener(e, this.start.bind(this), {passive:false}));
         evts.m.forEach(e => window.addEventListener(e, this.move.bind(this), {passive:false}));
@@ -221,28 +213,31 @@ const Studio = {
         this.draw();
     },
 
-    // --- CHUYỂN ĐỔI CHẾ ĐỘ ---
+    // --- HÀM SET MODE QUAN TRỌNG ---
     setMode: function(m) {
         this.mode = m;
+        
+        // 1. Đổi màu nút bấm
         document.getElementById('btn-mode-person').className = m==='person'?'mode-btn active':'mode-btn';
         document.getElementById('btn-mode-tour').className = m==='tour'?'mode-btn active':'mode-btn';
         
+        // 2. Kích hoạt logic "xuyên thấu"
         if (m === 'tour') {
-            document.body.classList.add('tour-mode'); // CSS sẽ tắt pointer-events canvas
-            App.toast("Chế độ Xoay 360");
+            document.body.classList.add('tour-mode'); // CSS sẽ set pointer-events: none cho Canvas
+            App.toast("Đã chuyển sang Xoay Tour");
         } else {
             document.body.classList.remove('tour-mode'); // Canvas nhận lại cảm ứng
-            App.toast("Chế độ Chỉnh Người");
+            App.toast("Đã chuyển sang Chỉnh Người");
         }
     },
 
     handleFile: async function(inp) {
         if(!inp.files[0]) return;
-        if(this.person.src) URL.revokeObjectURL(this.person.src); // Dọn rác RAM
+        if(this.person.src) URL.revokeObjectURL(this.person.src);
         
         document.getElementById('loader').style.display = 'flex';
-        // Tự động chuyển về chỉnh người khi upload
-        if (this.mode === 'tour') this.setMode('person');
+        // Nếu đang ở chế độ tour, tự động chuyển về chỉnh người để thấy ảnh mới
+        if(this.mode === 'tour') this.setMode('person');
 
         const fd = new FormData();
         fd.append("image_file", inp.files[0]);
@@ -262,12 +257,10 @@ const Studio = {
         const i = new Image();
         i.onload = () => {
             this.person.img = i;
-            // Auto fit: Cao 50% màn hình
             const h = this.canvas.height * 0.5;
             this.person.s = h / i.height;
             this.person.x = this.canvas.width/2;
             this.person.y = this.canvas.height - h/2 - 50;
-            
             document.getElementById('scale-slider').value = this.person.s;
             document.getElementById('loader').style.display = 'none';
             this.draw();
@@ -294,7 +287,7 @@ const Studio = {
 
     drag: false, sx:0, sy:0,
     start: function(e) {
-        // Chỉ kéo được khi không ở chế độ tour
+        // Chỉ khi ở chế độ 'person' thì canvas mới nhận sự kiện này (nhờ CSS)
         this.drag=true;
         const p = e.touches?e.touches[0]:e;
         this.sx = p.clientX - this.person.x;
