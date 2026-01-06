@@ -2,54 +2,71 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận Tour & Shop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Ninh Thuận Tour</title>
+    
     <style>
         /* --- CẤU HÌNH CƠ BẢN --- */
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            -webkit-tap-highlight-color: transparent; /* Bỏ màu xanh khi ấn nút trên Android */
+        }
 
-        /* THANH MENU (ĐẶT GIỮA TRÊN) */
+        /* --- THANH MENU ĐIỀU HƯỚNG --- */
         .top-bar {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 100; display: flex; gap: 10px;
-            background: rgba(0,0,0,0.5); padding: 5px; border-radius: 30px;
-            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);
+            position: absolute; 
+            /* Tự động né vùng tai thỏ/camera */
+            top: calc(20px + env(safe-area-inset-top)); 
+            left: 50%; transform: translateX(-50%);
+            z-index: 100; display: flex; gap: 8px;
+            background: rgba(20, 20, 20, 0.85); /* Màu tối sang trọng hơn */
+            padding: 6px; border-radius: 50px;
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
         .nav-btn {
-            background: transparent; border: none; color: #ddd;
-            padding: 10px 25px; border-radius: 25px; font-weight: 600; font-size: 14px;
-            cursor: pointer; transition: 0.3s; white-space: nowrap;
+            background: transparent; border: none; color: #aaa;
+            padding: 10px 24px; border-radius: 40px; 
+            font-weight: 600; font-size: 14px;
+            cursor: pointer; transition: all 0.25s ease;
+            white-space: nowrap;
         }
 
+        /* Hiệu ứng khi chọn active */
         .nav-btn.active {
-            background: #fff; color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            background: #fff; color: #000; 
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
+            transform: scale(1.02);
         }
+        
+        .nav-btn:active { transform: scale(0.95); } /* Hiệu ứng nhấn xuống */
 
-        /* KHUNG HIỂN THỊ (VIEWPORT) */
-        .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        /* --- KHUNG HIỂN THỊ --- */
+        .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; }
 
-        /* IFRAME: TỐI ƯU HIỆU NĂNG */
         .iframe-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
             z-index: 1; opacity: 0; visibility: hidden; transition: opacity 0.4s;
+            will-change: opacity; /* Tăng tốc phần cứng */
         }
-        /* Chỉ hiện khi active để tiết kiệm RAM */
-        .iframe-layer.active {
-            z-index: 5; opacity: 1; visibility: visible;
-        }
+        .iframe-layer.active { z-index: 5; opacity: 1; visibility: visible; }
 
-        /* LOADER ĐƠN GIẢN */
+        /* --- LOADER --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 50; display: flex;
-            align-items: center; justify-content: center; color: white;
-            flex-direction: column; font-size: 12px; letter-spacing: 1px;
+            align-items: center; justify-content: center; color: rgba(255,255,255,0.7);
+            flex-direction: column; font-size: 10px; letter-spacing: 2px;
         }
         .spinner {
-            width: 30px; height: 30px; border: 3px solid #333; 
-            border-top: 3px solid #fff; border-radius: 50%; 
-            animation: spin 0.8s infinite linear; margin-bottom: 10px;
+            width: 24px; height: 24px; border: 2px solid #333; 
+            border-top: 2px solid #FF6B00; border-radius: 50%; 
+            animation: spin 0.6s infinite linear; margin-bottom: 12px;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
@@ -57,12 +74,12 @@
 <body>
 
     <div id="loader">
-        <div class="spinner"></div>ĐANG TẢI...
+        <div class="spinner"></div>LOADING
     </div>
 
     <div class="top-bar">
-        <button class="nav-btn active" id="btn-vr" onclick="switchTab('vr')">VR Tour</button>
-        <button class="nav-btn" id="btn-shop" onclick="switchTab('shop')">Gian Hàng</button>
+        <button class="nav-btn active" id="btn-vr" onclick="switchTab('vr')">VR TOUR</button>
+        <button class="nav-btn" id="btn-shop" onclick="switchTab('shop')">GIAN HÀNG</button>
     </div>
 
     <div class="viewport">
@@ -79,7 +96,9 @@
         const TABS = ['vr', 'shop'];
 
         function switchTab(targetId) {
-            // 1. Cập nhật giao diện nút bấm
+            // Rung nhẹ điện thoại khi bấm (nếu hỗ trợ) tạo cảm giác thật
+            if(navigator.vibrate) navigator.vibrate(10);
+
             TABS.forEach(t => {
                 document.getElementById('btn-' + t).classList.remove('active');
                 document.getElementById('frame-' + t).classList.remove('active');
@@ -89,28 +108,21 @@
             const targetFrame = document.getElementById('frame-' + targetId);
             targetFrame.classList.add('active');
 
-            // 2. Logic Tải Chậm (Lazy Load) - Chống treo máy
-            // Nếu iframe chưa có link (src rỗng) thì mới bắt đầu nạp link vào
+            // Lazy Load thông minh
             if (!targetFrame.src || targetFrame.src === "") {
                 const loader = document.getElementById('loader');
                 loader.style.display = 'flex';
-                
                 targetFrame.src = targetFrame.getAttribute('data-src');
-                
-                targetFrame.onload = () => {
-                    loader.style.display = 'none';
-                };
+                targetFrame.onload = () => { loader.style.display = 'none'; };
             }
         }
 
-        // Khởi chạy: Tự động vào tab VR đầu tiên
         window.onload = () => {
             switchTab('vr');
-            // Ẩn loader ban đầu sau khi trang sẵn sàng
             setTimeout(() => {
                 const loader = document.getElementById('loader');
                 if(loader) loader.style.display = 'none';
-            }, 1000);
+            }, 800);
         };
     </script>
 </body>
