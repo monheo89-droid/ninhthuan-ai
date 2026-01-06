@@ -3,134 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI - Postcard Studio</title>
+    <title>Ninh Thuận AI - Studio Lite</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- 1. CẤU HÌNH CƠ BẢN --- */
-        :root { 
-            --primary: #FF6B00; 
-            --glass: rgba(30, 30, 30, 0.85);
+        /* --- 1. CẤU HÌNH --- */
+        :root { --primary: #FF6B00; --glass: rgba(20, 20, 20, 0.9); }
+        
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; font-family: sans-serif; 
+            user-select: none; -webkit-touch-callout: none;
+            touch-action: none; /* Chặn giật lag */
         }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; user-select: none; -webkit-touch-callout: none; }
 
-        /* --- 2. HỆ THỐNG IFRAME (Z-Index Swapping) --- */
+        /* VIEWPORT */
         .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; }
-        .iframe-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
-            z-index: 1; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        
+        /* Iframe Layer (Lazy Load + Visibility) */
+        .iframe-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; 
+            z-index: 1; opacity: 0; visibility: hidden; transition: opacity 0.5s;
         }
-        .iframe-layer.active { z-index: 5; opacity: 1; pointer-events: auto; }
+        .iframe-layer.active { z-index: 5; opacity: 1; visibility: visible; }
 
-        /* Canvas vẽ nhân vật */
-        #studio-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none; touch-action: none; }
+        /* CANVAS */
+        #studio-canvas { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 50; touch-action: none; pointer-events: auto; 
+        }
 
-        /* --- 3. UI: THANH ĐIỀU KHIỂN BÊN PHẢI (DOCK) --- */
+        /* LOGIC FIX LỖI: KHI Ở CHẾ ĐỘ TOUR, CANVAS KHÔNG NHẬN CẢM ỨNG */
+        body.tour-mode #studio-canvas { pointer-events: none; }
+
+        /* UI CONTROLS */
         .right-dock {
             position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
             z-index: 9000; display: flex; flex-direction: column; gap: 12px; align-items: center;
-            background: var(--glass); backdrop-filter: blur(10px);
-            padding: 15px 8px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.15);
-            transition: opacity 0.3s;
+            background: var(--glass); backdrop-filter: blur(10px); padding: 15px 8px; border-radius: 30px; 
+            border: 1px solid rgba(255,255,255,0.2); transition: opacity 0.3s;
         }
 
-        /* Nút công cụ tròn */
-        .tool-btn {
-            width: 42px; height: 42px; border-radius: 50%; border: none;
-            background: rgba(255,255,255,0.1); color: #ccc; font-size: 16px;
-            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;
-        }
+        .tool-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: rgba(255,255,255,0.15); color: #ccc; font-size: 16px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .tool-btn:active { transform: scale(0.9); }
-        .tool-btn.active { background: var(--primary); color: white; box-shadow: 0 0 10px rgba(255, 107, 0, 0.5); }
-        .tool-btn.btn-cam { border: 2px solid white; color: white; background: transparent; }
 
-        /* Switcher: Chọn Người hay Nền */
-        .mode-switcher {
-            display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.3);
-            padding: 5px; border-radius: 25px; margin-bottom: 5px;
-        }
-        .mode-btn {
-            width: 36px; height: 36px; border-radius: 50%; border: none;
-            background: transparent; color: #777; font-size: 14px; cursor: pointer;
-        }
-        .mode-btn.active { background: #fff; color: #000; }
-
-        /* Slider Dọc */
-        .slider-container {
-            height: 120px; width: 40px; display: flex; justify-content: center; padding: 5px 0;
-        }
-        input[type=range] {
-            writing-mode: bt-lr; -webkit-appearance: slider-vertical;
-            width: 6px; height: 100%; background: rgba(255,255,255,0.3); border-radius: 3px; outline: none;
-        }
-
-        /* --- 4. TOP NAV --- */
-        .top-bar { position: absolute; top: 20px; left: 20px; z-index: 100; display: flex; gap: 10px; transition: opacity 0.3s; }
-        .nav-btn {
-            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.1); color: #ddd;
-            padding: 8px 18px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer;
-        }
-        .nav-btn.active { background: #fff; color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-
-        /* --- 5. CHẾ ĐỘ CHỤP BƯU THIẾP (SAFE ZONE) --- */
-        #postcard-mask {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            /* Mặc định ẩn bằng width/height 0 */
-            width: 0; height: 0; 
-            /* Box-shadow khổng lồ tạo màn đen xung quanh */
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 1); 
-            z-index: 9999; pointer-events: none; opacity: 0; transition: opacity 0.5s;
-            border: 2px dashed rgba(255,255,255,0.5); /* Viền hướng dẫn cắt */
-            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-        }
+        /* SWITCHER: NGƯỜI vs TOUR */
+        .mode-switcher { display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 25px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.1); }
+        .mode-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: #666; font-size: 15px; cursor: pointer; transition: 0.3s; }
         
-        #postcard-mask.active {
-            opacity: 1;
-            /* Tỷ lệ khung hình an toàn: 4:5 (Rộng 320px - Cao 400px trên mobile hoặc scale theo vh) */
-            width: 45vh; height: 56.25vh; /* Tỷ lệ 4:5 */
-            background: transparent;
-        }
+        /* Active State */
+        .mode-btn.active { background: var(--primary); color: #fff; box-shadow: 0 0 8px var(--primary); }
 
-        .safe-zone-label {
-            color: rgba(255,255,255,0.5); font-size: 10px; margin-bottom: -25px; 
-            text-transform: uppercase; letter-spacing: 2px; white-space: nowrap;
-        }
+        /* SLIDER */
+        .slider-container { height: 120px; width: 40px; display: flex; justify-content: center; padding: 5px 0; }
+        input[type=range] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 6px; height: 100%; background: rgba(255,255,255,0.3); border-radius: 3px; outline: none; pointer-events: auto !important; }
 
-        .brand-watermark {
-            margin-bottom: 15px; color: rgba(255,255,255,0.9); font-weight: 900; font-size: 16px;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.8); letter-spacing: 1px;
-            font-family: 'Segoe UI', sans-serif; border: 2px solid white; padding: 5px 15px;
-            display: none;
-        }
-        #postcard-mask.active .brand-watermark { display: block; }
+        /* TOP NAV */
+        .top-bar { position: absolute; top: 20px; left: 20px; z-index: 100; display: flex; gap: 10px; transition: opacity 0.3s; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: #ddd; padding: 8px 18px; border-radius: 20px; font-weight: 600; font-size: 13px; border: none; cursor: pointer; }
+        .nav-btn.active { background: #fff; color: #000; }
 
-        /* Ẩn UI khi chụp */
-        body.capture-mode .top-bar, 
-        body.capture-mode .right-dock { opacity: 0; pointer-events: none; }
-
-        /* Loading & Count */
-        #loader, #count-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;
-            display: none; align-items: center; justify-content: center; flex-direction: column; color: white;
-        }
-        #loader { background: rgba(0,0,0,0.9); }
+        /* UTILS */
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; background: rgba(0,0,0,0.9); }
         .spinner { width: 30px; height: 30px; border: 3px solid #555; border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s infinite linear; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        #count-layer { font-size: 100px; font-weight: 900; text-shadow: 0 0 30px #000; pointer-events: none; }
-
+        .toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 12px; z-index: 11000; display: none; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div id="loader"><div class="spinner"></div><p style="margin-top:10px; font-size:12px">AI ĐANG XỬ LÝ...</p></div>
-
-<div id="count-layer">3</div>
-
-<div id="postcard-mask">
-    <div class="brand-watermark">NINH THUẬN TOUR</div>
-    <div class="safe-zone-label">Vùng an toàn (Safe Zone)</div>
-</div>
+<div id="loader"><div class="spinner"></div><p style="margin-top:10px;font-size:12px">AI ĐANG XỬ LÝ...</p></div>
+<div id="toast-msg" class="toast">Thông báo</div>
 
 <div class="top-bar">
     <button class="nav-btn active" id="btn-vr" onclick="App.switch('vr')">VR Tour</button>
@@ -139,35 +82,27 @@
 
 <div class="right-dock">
     <div class="mode-switcher">
-        <button class="mode-btn active" id="mode-person" onclick="Studio.setTarget('person')" title="Chỉnh Nhân Vật">
-            <i class="fas fa-user"></i>
+        <button class="mode-btn active" id="btn-mode-person" onclick="Studio.setMode('person')" title="Di chuyển Người">
+            <i class="fas fa-user-edit"></i>
         </button>
-        <button class="mode-btn" id="mode-bg" onclick="Studio.setTarget('bg')" title="Chỉnh Nền/Sticker">
-            <i class="far fa-image"></i>
+        <button class="mode-btn" id="btn-mode-tour" onclick="Studio.setMode('tour')" title="Xoay Tour">
+            <i class="fas fa-street-view"></i>
         </button>
     </div>
 
-    <button class="tool-btn" onclick="document.getElementById('inp-file').click()">
-        <i class="fas fa-plus"></i>
-    </button>
+    <button class="tool-btn" onclick="document.getElementById('inp-file').click()"><i class="fas fa-plus"></i></button>
     <input type="file" id="inp-file" hidden accept="image/*" onchange="Studio.handleFile(this)">
 
     <div class="slider-container">
         <input type="range" id="scale-slider" min="0.1" max="3.0" step="0.05" value="1.0" oninput="Studio.setScale(this.value)">
     </div>
 
-    <button class="tool-btn" onclick="Studio.flip()">
-        <i class="fas fa-exchange-alt"></i>
-    </button>
-
-    <button class="tool-btn btn-cam" onclick="App.capture()">
-        <i class="fas fa-camera"></i>
-    </button>
+    <button class="tool-btn" onclick="Studio.flip()"><i class="fas fa-exchange-alt"></i></button>
 </div>
 
 <div class="viewport">
-    <iframe id="frame-vr" class="iframe-layer active" src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" allowfullscreen></iframe>
-    <iframe id="frame-shop" class="iframe-layer" src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb" allowfullscreen></iframe>
+    <iframe id="frame-vr" class="iframe-layer" data-src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" allowfullscreen></iframe>
+    <iframe id="frame-shop" class="iframe-layer" data-src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb" allowfullscreen></iframe>
 </div>
 
 <canvas id="studio-canvas"></canvas>
@@ -176,46 +111,38 @@
     <video id="v-intro" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;">
         <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
     </video>
-    <button onclick="document.getElementById('intro-layer').remove()" style="position:absolute;bottom:50px;padding:12px 30px;border-radius:30px;border:1px solid white;background:rgba(0,0,0,0.6);color:white;cursor:pointer;font-weight:bold;">BẮT ĐẦU</button>
+    <button onclick="App.start()" style="position:absolute;bottom:50px;padding:12px 30px;border-radius:30px;border:1px solid white;background:rgba(0,0,0,0.6);color:white;cursor:pointer;font-weight:bold;">BẮT ĐẦU</button>
 </div>
 
 <script>
 const CONFIG = { API_KEY: "FtyKLHXkG5By3gFBCBcoTACC" };
 
 const App = {
+    start: function() {
+        const intro = document.getElementById('intro-layer');
+        intro.style.transition = "opacity 0.5s"; intro.style.opacity = 0;
+        document.getElementById('v-intro').pause();
+        setTimeout(() => { intro.remove(); App.switch('vr'); }, 500);
+    },
+
     switch: (t) => {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('btn-'+t).classList.add('active');
         document.querySelectorAll('.iframe-layer').forEach(f => f.classList.remove('active'));
-        document.getElementById('frame-'+t).classList.add('active');
+        
+        const target = document.getElementById('frame-'+t);
+        target.classList.add('active');
+        if (!target.src || target.src === "") {
+            document.getElementById('loader').style.display = 'flex';
+            target.src = target.getAttribute('data-src');
+            target.onload = () => document.getElementById('loader').style.display = 'none';
+        }
     },
 
-    capture: () => {
-        const countEl = document.getElementById('count-layer');
-        const mask = document.getElementById('postcard-mask');
-        let n = 3;
-        countEl.style.display = 'flex';
-        countEl.innerText = n;
-
-        const timer = setInterval(() => {
-            n--;
-            if(n > 0) {
-                countEl.innerText = n;
-            } else {
-                clearInterval(timer);
-                countEl.style.display = 'none';
-                
-                // Kích hoạt chế độ chụp
-                document.body.classList.add('capture-mode'); // Ẩn UI
-                mask.classList.add('active'); // Hiện khung đen + vùng an toàn
-
-                // Sau 6s tự trả về bình thường
-                setTimeout(() => {
-                    document.body.classList.remove('capture-mode');
-                    mask.classList.remove('active');
-                }, 6000);
-            }
-        }, 1000);
+    toast: (msg) => {
+        const t = document.getElementById('toast-msg');
+        t.innerText = msg; t.style.display = 'block';
+        setTimeout(()=>t.style.display='none', 1500);
     }
 };
 
@@ -223,18 +150,17 @@ const Studio = {
     canvas: document.getElementById('studio-canvas'),
     ctx: document.getElementById('studio-canvas').getContext('2d'),
     
-    target: 'person', // 'person' or 'bg'
-    
-    person: { img: null, x:0, y:0, s:1, f:false },
-    bg: { img: null, x:0, y:0, s:1, f:false },
+    // Mode: 'person' (chỉnh người) hoặc 'tour' (xoay cảnh)
+    mode: 'person', 
+    person: { img:null, x:0, y:0, s:1, f:false },
 
     init: function() {
         this.resize();
         window.onresize = () => { this.resize(); this.draw(); };
-        
-        ['mousedown','touchstart'].forEach(e => this.canvas.addEventListener(e, this.start.bind(this), {passive:false}));
-        ['mousemove','touchmove'].forEach(e => window.addEventListener(e, this.move.bind(this), {passive:false}));
-        ['mouseup','touchend'].forEach(e => window.addEventListener(e, () => this.drag=false));
+        const evts = {s:['mousedown','touchstart'], m:['mousemove','touchmove'], e:['mouseup','touchend']};
+        evts.s.forEach(e => this.canvas.addEventListener(e, this.start.bind(this), {passive:false}));
+        evts.m.forEach(e => window.addEventListener(e, this.move.bind(this), {passive:false}));
+        evts.e.forEach(e => window.addEventListener(e, () => this.drag=false));
     },
 
     resize: function() {
@@ -243,117 +169,97 @@ const Studio = {
         this.draw();
     },
 
-    setTarget: function(t) {
-        this.target = t;
-        document.getElementById('mode-person').className = t==='person'?'mode-btn active':'mode-btn';
-        document.getElementById('mode-bg').className = t==='bg'?'mode-btn active':'mode-btn';
+    // --- HÀM SET MODE QUAN TRỌNG ---
+    setMode: function(m) {
+        this.mode = m;
         
-        // Update slider theo giá trị hiện tại của target
-        const val = t==='person' ? this.person.s : this.bg.s;
-        document.getElementById('scale-slider').value = val;
+        // 1. Đổi màu nút bấm
+        document.getElementById('btn-mode-person').className = m==='person'?'mode-btn active':'mode-btn';
+        document.getElementById('btn-mode-tour').className = m==='tour'?'mode-btn active':'mode-btn';
+        
+        // 2. Kích hoạt logic "xuyên thấu"
+        if (m === 'tour') {
+            document.body.classList.add('tour-mode'); // CSS sẽ set pointer-events: none cho Canvas
+            App.toast("Đã chuyển sang Xoay Tour");
+        } else {
+            document.body.classList.remove('tour-mode'); // Canvas nhận lại cảm ứng
+            App.toast("Đã chuyển sang Chỉnh Người");
+        }
     },
 
     handleFile: async function(inp) {
         if(!inp.files[0]) return;
+        if(this.person.src) URL.revokeObjectURL(this.person.src);
         
-        if(this.target === 'person') {
-            document.getElementById('loader').style.display = 'flex';
-            const fd = new FormData();
-            fd.append("image_file", inp.files[0]);
-            try {
-                const r = await fetch("https://api.remove.bg/v1.0/removebg", {
-                    method:"POST", headers:{"X-Api-Key": CONFIG.API_KEY}, body:fd
-                });
-                if(!r.ok) throw 0;
-                this.load(await r.blob(), 'person');
-            } catch {
-                alert("Lỗi AI. Dùng ảnh gốc.");
-                this.load(inp.files[0], 'person');
-            }
-        } else {
-            // Background / Sticker mode
-            this.load(inp.files[0], 'bg');
+        document.getElementById('loader').style.display = 'flex';
+        // Nếu đang ở chế độ tour, tự động chuyển về chỉnh người để thấy ảnh mới
+        if(this.mode === 'tour') this.setMode('person');
+
+        const fd = new FormData();
+        fd.append("image_file", inp.files[0]);
+        try {
+            const r = await fetch("https://api.remove.bg/v1.0/removebg", {
+                method:"POST", headers:{"X-Api-Key": CONFIG.API_KEY}, body:fd
+            });
+            if(!r.ok) throw 0;
+            this.load(await r.blob());
+        } catch {
+            alert("Lỗi AI. Dùng ảnh gốc.");
+            this.load(inp.files[0]);
         }
     },
 
-    load: function(src, type) {
+    load: function(src) {
         const i = new Image();
         i.onload = () => {
-            const obj = type==='person' ? this.person : this.bg;
-            obj.img = i;
-            
-            // Auto fit
-            if(type === 'person') {
-                const h = this.canvas.height * 0.5;
-                obj.s = h / i.height;
-                obj.x = this.canvas.width/2;
-                obj.y = this.canvas.height - h/2 - 50;
-            } else {
-                obj.s = 1;
-                obj.x = this.canvas.width/2;
-                obj.y = this.canvas.height/2;
-            }
-
-            document.getElementById('scale-slider').value = obj.s;
+            this.person.img = i;
+            const h = this.canvas.height * 0.5;
+            this.person.s = h / i.height;
+            this.person.x = this.canvas.width/2;
+            this.person.y = this.canvas.height - h/2 - 50;
+            document.getElementById('scale-slider').value = this.person.s;
             document.getElementById('loader').style.display = 'none';
-            this.canvas.style.pointerEvents = 'auto';
             this.draw();
         };
-        i.src = URL.createObjectURL(src instanceof Blob ? src : new Blob([src]));
+        const url = URL.createObjectURL(src instanceof Blob ? src : new Blob([src]));
+        this.person.src = url; 
+        i.src = url;
     },
 
     draw: function() {
         this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
-        
-        // Vẽ BG trước
-        this.drawObj(this.bg);
-        // Vẽ Person sau
-        this.drawObj(this.person);
-    },
-
-    drawObj: function(obj) {
-        if(!obj.img) return;
+        if(!this.person.img) return;
+        const p = this.person;
         this.ctx.save();
-        this.ctx.translate(obj.x, obj.y);
-        this.ctx.scale(obj.f?-obj.s:obj.s, obj.s);
+        this.ctx.translate(p.x, p.y);
+        this.ctx.scale(p.f?-p.s:p.s, p.s);
         this.ctx.shadowBlur=15; this.ctx.shadowColor="rgba(0,0,0,0.5)";
-        this.ctx.drawImage(obj.img, -obj.img.width/2, -obj.img.height/2);
+        this.ctx.drawImage(p.img, -p.img.width/2, -p.img.height/2);
         this.ctx.restore();
     },
 
-    setScale: function(v) { 
-        const obj = this.target==='person' ? this.person : this.bg;
-        obj.s = parseFloat(v); 
-        this.draw(); 
-    },
-    
-    flip: function() { 
-        const obj = this.target==='person' ? this.person : this.bg;
-        obj.f = !obj.f; 
-        this.draw(); 
-    },
+    setScale: function(v) { this.person.s = parseFloat(v); this.draw(); },
+    flip: function() { this.person.f = !this.person.f; this.draw(); },
 
     drag: false, sx:0, sy:0,
     start: function(e) {
+        // Chỉ khi ở chế độ 'person' thì canvas mới nhận sự kiện này (nhờ CSS)
         this.drag=true;
         const p = e.touches?e.touches[0]:e;
-        // Lưu vị trí bắt đầu drag so với tâm đối tượng đang chọn
-        const obj = this.target==='person' ? this.person : this.bg;
-        this.sx = p.clientX - obj.x;
-        this.sy = p.clientY - obj.y;
+        this.sx = p.clientX - this.person.x;
+        this.sy = p.clientY - this.person.y;
     },
     move: function(e) {
         if(!this.drag) return;
         if(e.cancelable) e.preventDefault();
         const p = e.touches?e.touches[0]:e;
-        const obj = this.target==='person' ? this.person : this.bg;
-        obj.x = p.clientX - this.sx;
-        obj.y = p.clientY - this.sy;
+        this.person.x = p.clientX - this.sx;
+        this.person.y = p.clientY - this.sy;
         this.draw();
     }
 };
 
-Studio.init();
+window.onload = () => Studio.init();
 </script>
 </body>
 </html>
