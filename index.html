@@ -3,263 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninh Thuận AI - Studio Lite</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>Ninh Thuận Tour & Shop</title>
     <style>
-        /* --- 1. CẤU HÌNH --- */
-        :root { --primary: #FF6B00; --glass: rgba(20, 20, 20, 0.9); }
-        
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #000; font-family: sans-serif; 
-            user-select: none; -webkit-touch-callout: none;
-            touch-action: none; /* Chặn giật lag */
+        /* --- CẤU HÌNH CƠ BẢN --- */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+
+        /* THANH MENU (ĐẶT GIỮA TRÊN) */
+        .top-bar {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 100; display: flex; gap: 10px;
+            background: rgba(0,0,0,0.5); padding: 5px; border-radius: 30px;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);
         }
 
-        /* VIEWPORT */
-        .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; }
-        
-        /* Iframe Layer (Lazy Load + Visibility) */
-        .iframe-layer { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; 
-            z-index: 1; opacity: 0; visibility: hidden; transition: opacity 0.5s;
-        }
-        .iframe-layer.active { z-index: 5; opacity: 1; visibility: visible; }
-
-        /* CANVAS */
-        #studio-canvas { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 50; touch-action: none; pointer-events: auto; 
+        .nav-btn {
+            background: transparent; border: none; color: #ddd;
+            padding: 10px 25px; border-radius: 25px; font-weight: 600; font-size: 14px;
+            cursor: pointer; transition: 0.3s; white-space: nowrap;
         }
 
-        /* LOGIC FIX LỖI: KHI Ở CHẾ ĐỘ TOUR, CANVAS KHÔNG NHẬN CẢM ỨNG */
-        body.tour-mode #studio-canvas { pointer-events: none; }
-
-        /* UI CONTROLS */
-        .right-dock {
-            position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
-            z-index: 9000; display: flex; flex-direction: column; gap: 12px; align-items: center;
-            background: var(--glass); backdrop-filter: blur(10px); padding: 15px 8px; border-radius: 30px; 
-            border: 1px solid rgba(255,255,255,0.2); transition: opacity 0.3s;
+        .nav-btn.active {
+            background: #fff; color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
-        .tool-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: rgba(255,255,255,0.15); color: #ccc; font-size: 16px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .tool-btn:active { transform: scale(0.9); }
+        /* KHUNG HIỂN THỊ (VIEWPORT) */
+        .viewport { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* SWITCHER: NGƯỜI vs TOUR */
-        .mode-switcher { display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 25px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.1); }
-        .mode-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: #666; font-size: 15px; cursor: pointer; transition: 0.3s; }
-        
-        /* Active State */
-        .mode-btn.active { background: var(--primary); color: #fff; box-shadow: 0 0 8px var(--primary); }
+        /* IFRAME: TỐI ƯU HIỆU NĂNG */
+        .iframe-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
+            z-index: 1; opacity: 0; visibility: hidden; transition: opacity 0.4s;
+        }
+        /* Chỉ hiện khi active để tiết kiệm RAM */
+        .iframe-layer.active {
+            z-index: 5; opacity: 1; visibility: visible;
+        }
 
-        /* SLIDER */
-        .slider-container { height: 120px; width: 40px; display: flex; justify-content: center; padding: 5px 0; }
-        input[type=range] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 6px; height: 100%; background: rgba(255,255,255,0.3); border-radius: 3px; outline: none; pointer-events: auto !important; }
-
-        /* TOP NAV */
-        .top-bar { position: absolute; top: 20px; left: 20px; z-index: 100; display: flex; gap: 10px; transition: opacity 0.3s; }
-        .nav-btn { background: rgba(255,255,255,0.2); color: #ddd; padding: 8px 18px; border-radius: 20px; font-weight: 600; font-size: 13px; border: none; cursor: pointer; }
-        .nav-btn.active { background: #fff; color: #000; }
-
-        /* UTILS */
-        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; background: rgba(0,0,0,0.9); }
-        .spinner { width: 30px; height: 30px; border: 3px solid #555; border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s infinite linear; }
+        /* LOADER ĐƠN GIẢN */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 50; display: flex;
+            align-items: center; justify-content: center; color: white;
+            flex-direction: column; font-size: 12px; letter-spacing: 1px;
+        }
+        .spinner {
+            width: 30px; height: 30px; border: 3px solid #333; 
+            border-top: 3px solid #fff; border-radius: 50%; 
+            animation: spin 0.8s infinite linear; margin-bottom: 10px;
+        }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 12px; z-index: 11000; display: none; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div id="loader"><div class="spinner"></div><p style="margin-top:10px;font-size:12px">AI ĐANG XỬ LÝ...</p></div>
-<div id="toast-msg" class="toast">Thông báo</div>
-
-<div class="top-bar">
-    <button class="nav-btn active" id="btn-vr" onclick="App.switch('vr')">VR Tour</button>
-    <button class="nav-btn" id="btn-shop" onclick="App.switch('shop')">Gian Hàng</button>
-</div>
-
-<div class="right-dock">
-    <div class="mode-switcher">
-        <button class="mode-btn active" id="btn-mode-person" onclick="Studio.setMode('person')" title="Di chuyển Người">
-            <i class="fas fa-user-edit"></i>
-        </button>
-        <button class="mode-btn" id="btn-mode-tour" onclick="Studio.setMode('tour')" title="Xoay Tour">
-            <i class="fas fa-street-view"></i>
-        </button>
+    <div id="loader">
+        <div class="spinner"></div>ĐANG TẢI...
     </div>
 
-    <button class="tool-btn" onclick="document.getElementById('inp-file').click()"><i class="fas fa-plus"></i></button>
-    <input type="file" id="inp-file" hidden accept="image/*" onchange="Studio.handleFile(this)">
-
-    <div class="slider-container">
-        <input type="range" id="scale-slider" min="0.1" max="3.0" step="0.05" value="1.0" oninput="Studio.setScale(this.value)">
+    <div class="top-bar">
+        <button class="nav-btn active" id="btn-vr" onclick="switchTab('vr')">VR Tour</button>
+        <button class="nav-btn" id="btn-shop" onclick="switchTab('shop')">Gian Hàng</button>
     </div>
 
-    <button class="tool-btn" onclick="Studio.flip()"><i class="fas fa-exchange-alt"></i></button>
-</div>
+    <div class="viewport">
+        <iframe id="frame-vr" class="iframe-layer" 
+            data-src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" 
+            allowfullscreen></iframe>
 
-<div class="viewport">
-    <iframe id="frame-vr" class="iframe-layer" data-src="https://tour.panoee.net/68972f4ba3c49352552578cd/68c2e05f65c1d76691a79f7c" allowfullscreen></iframe>
-    <iframe id="frame-shop" class="iframe-layer" data-src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb" allowfullscreen></iframe>
-</div>
+        <iframe id="frame-shop" class="iframe-layer" 
+            data-src="https://tour.panoee.net/68972f4ba3c49352552578cd/691b32dc061521c90def58cb" 
+            allowfullscreen></iframe>
+    </div>
 
-<canvas id="studio-canvas"></canvas>
+    <script>
+        const TABS = ['vr', 'shop'];
 
-<div id="intro-layer" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:20000;display:flex;align-items:center;justify-content:center;">
-    <video id="v-intro" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;">
-        <source src="https://monheo89-droid.github.io/ninhthuan-ai/video/intro.mp4" type="video/mp4">
-    </video>
-    <button onclick="App.start()" style="position:absolute;bottom:50px;padding:12px 30px;border-radius:30px;border:1px solid white;background:rgba(0,0,0,0.6);color:white;cursor:pointer;font-weight:bold;">BẮT ĐẦU</button>
-</div>
-
-<script>
-const CONFIG = { API_KEY: "FtyKLHXkG5By3gFBCBcoTACC" };
-
-const App = {
-    start: function() {
-        const intro = document.getElementById('intro-layer');
-        intro.style.transition = "opacity 0.5s"; intro.style.opacity = 0;
-        document.getElementById('v-intro').pause();
-        setTimeout(() => { intro.remove(); App.switch('vr'); }, 500);
-    },
-
-    switch: (t) => {
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-'+t).classList.add('active');
-        document.querySelectorAll('.iframe-layer').forEach(f => f.classList.remove('active'));
-        
-        const target = document.getElementById('frame-'+t);
-        target.classList.add('active');
-        if (!target.src || target.src === "") {
-            document.getElementById('loader').style.display = 'flex';
-            target.src = target.getAttribute('data-src');
-            target.onload = () => document.getElementById('loader').style.display = 'none';
-        }
-    },
-
-    toast: (msg) => {
-        const t = document.getElementById('toast-msg');
-        t.innerText = msg; t.style.display = 'block';
-        setTimeout(()=>t.style.display='none', 1500);
-    }
-};
-
-const Studio = {
-    canvas: document.getElementById('studio-canvas'),
-    ctx: document.getElementById('studio-canvas').getContext('2d'),
-    
-    // Mode: 'person' (chỉnh người) hoặc 'tour' (xoay cảnh)
-    mode: 'person', 
-    person: { img:null, x:0, y:0, s:1, f:false },
-
-    init: function() {
-        this.resize();
-        window.onresize = () => { this.resize(); this.draw(); };
-        const evts = {s:['mousedown','touchstart'], m:['mousemove','touchmove'], e:['mouseup','touchend']};
-        evts.s.forEach(e => this.canvas.addEventListener(e, this.start.bind(this), {passive:false}));
-        evts.m.forEach(e => window.addEventListener(e, this.move.bind(this), {passive:false}));
-        evts.e.forEach(e => window.addEventListener(e, () => this.drag=false));
-    },
-
-    resize: function() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.draw();
-    },
-
-    // --- HÀM SET MODE QUAN TRỌNG ---
-    setMode: function(m) {
-        this.mode = m;
-        
-        // 1. Đổi màu nút bấm
-        document.getElementById('btn-mode-person').className = m==='person'?'mode-btn active':'mode-btn';
-        document.getElementById('btn-mode-tour').className = m==='tour'?'mode-btn active':'mode-btn';
-        
-        // 2. Kích hoạt logic "xuyên thấu"
-        if (m === 'tour') {
-            document.body.classList.add('tour-mode'); // CSS sẽ set pointer-events: none cho Canvas
-            App.toast("Đã chuyển sang Xoay Tour");
-        } else {
-            document.body.classList.remove('tour-mode'); // Canvas nhận lại cảm ứng
-            App.toast("Đã chuyển sang Chỉnh Người");
-        }
-    },
-
-    handleFile: async function(inp) {
-        if(!inp.files[0]) return;
-        if(this.person.src) URL.revokeObjectURL(this.person.src);
-        
-        document.getElementById('loader').style.display = 'flex';
-        // Nếu đang ở chế độ tour, tự động chuyển về chỉnh người để thấy ảnh mới
-        if(this.mode === 'tour') this.setMode('person');
-
-        const fd = new FormData();
-        fd.append("image_file", inp.files[0]);
-        try {
-            const r = await fetch("https://api.remove.bg/v1.0/removebg", {
-                method:"POST", headers:{"X-Api-Key": CONFIG.API_KEY}, body:fd
+        function switchTab(targetId) {
+            // 1. Cập nhật giao diện nút bấm
+            TABS.forEach(t => {
+                document.getElementById('btn-' + t).classList.remove('active');
+                document.getElementById('frame-' + t).classList.remove('active');
             });
-            if(!r.ok) throw 0;
-            this.load(await r.blob());
-        } catch {
-            alert("Lỗi AI. Dùng ảnh gốc.");
-            this.load(inp.files[0]);
+
+            document.getElementById('btn-' + targetId).classList.add('active');
+            const targetFrame = document.getElementById('frame-' + targetId);
+            targetFrame.classList.add('active');
+
+            // 2. Logic Tải Chậm (Lazy Load) - Chống treo máy
+            // Nếu iframe chưa có link (src rỗng) thì mới bắt đầu nạp link vào
+            if (!targetFrame.src || targetFrame.src === "") {
+                const loader = document.getElementById('loader');
+                loader.style.display = 'flex';
+                
+                targetFrame.src = targetFrame.getAttribute('data-src');
+                
+                targetFrame.onload = () => {
+                    loader.style.display = 'none';
+                };
+            }
         }
-    },
 
-    load: function(src) {
-        const i = new Image();
-        i.onload = () => {
-            this.person.img = i;
-            const h = this.canvas.height * 0.5;
-            this.person.s = h / i.height;
-            this.person.x = this.canvas.width/2;
-            this.person.y = this.canvas.height - h/2 - 50;
-            document.getElementById('scale-slider').value = this.person.s;
-            document.getElementById('loader').style.display = 'none';
-            this.draw();
+        // Khởi chạy: Tự động vào tab VR đầu tiên
+        window.onload = () => {
+            switchTab('vr');
+            // Ẩn loader ban đầu sau khi trang sẵn sàng
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                if(loader) loader.style.display = 'none';
+            }, 1000);
         };
-        const url = URL.createObjectURL(src instanceof Blob ? src : new Blob([src]));
-        this.person.src = url; 
-        i.src = url;
-    },
-
-    draw: function() {
-        this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
-        if(!this.person.img) return;
-        const p = this.person;
-        this.ctx.save();
-        this.ctx.translate(p.x, p.y);
-        this.ctx.scale(p.f?-p.s:p.s, p.s);
-        this.ctx.shadowBlur=15; this.ctx.shadowColor="rgba(0,0,0,0.5)";
-        this.ctx.drawImage(p.img, -p.img.width/2, -p.img.height/2);
-        this.ctx.restore();
-    },
-
-    setScale: function(v) { this.person.s = parseFloat(v); this.draw(); },
-    flip: function() { this.person.f = !this.person.f; this.draw(); },
-
-    drag: false, sx:0, sy:0,
-    start: function(e) {
-        // Chỉ khi ở chế độ 'person' thì canvas mới nhận sự kiện này (nhờ CSS)
-        this.drag=true;
-        const p = e.touches?e.touches[0]:e;
-        this.sx = p.clientX - this.person.x;
-        this.sy = p.clientY - this.person.y;
-    },
-    move: function(e) {
-        if(!this.drag) return;
-        if(e.cancelable) e.preventDefault();
-        const p = e.touches?e.touches[0]:e;
-        this.person.x = p.clientX - this.sx;
-        this.person.y = p.clientY - this.sy;
-        this.draw();
-    }
-};
-
-window.onload = () => Studio.init();
-</script>
+    </script>
 </body>
 </html>
